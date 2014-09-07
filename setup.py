@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
+import randrctl
+
+version = randrctl.__version__
 
 setup(
     name='randrctl',
-    version='0.1',
+    version=version,
     url='http://github.com/edio/randrctl',
     license='GPLv3',
     author='Dmytro Kostiuchenko',
