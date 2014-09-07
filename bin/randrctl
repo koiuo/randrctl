@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+from randrctl.__main__ import Main
+
+
+def main():
+    Main().run()
+
+
+if __name__ == '__main__':
+    main()
