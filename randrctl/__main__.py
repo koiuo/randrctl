@@ -1,9 +1,9 @@
 import sys
 import argparse
+import randrctl
 from randrctl.ctl import CtlFactory
 
 __author__ = 'edio'
-
 
 DUMP = 'dump'
 LIST = 'list'
@@ -19,11 +19,14 @@ class Main:
                                          formatter_class=lambda prog: argparse.HelpFormatter(prog,
                                                                                              max_help_position=30))
 
+        parser.add_argument('-v', '--version', help='print version information', action='store_const', const=True,
+                            default=False)
+
         commands_parsers = parser.add_subparsers(title='Available commands',
                                                  description='use "command -h" for details',
                                                  # metavar='command',
                                                  dest='command', )
-        commands_parsers.required = True
+        # commands_parsers.required = True
 
         # switch-to
         command_switch_to = commands_parsers.add_parser(SWITCH_TO, help='switch to profile')
@@ -44,6 +47,14 @@ class Main:
         command_dump.add_argument('-f', help='store profile to file under profile directory', dest='file_name')
 
         args = parser.parse_args(sys.argv[1:])
+
+        if args.version:
+            print(randrctl.__version__)
+            sys.exit(0)
+
+        if args.command is None:
+            parser.print_help()
+            sys.exit(1)
 
         factory = CtlFactory()
         self.randrctl = factory.getRandrCtl(HOME_DIR)
