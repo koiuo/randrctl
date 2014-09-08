@@ -16,7 +16,7 @@ Usage is very simple:
 
 1. Setup your screen to suit your needs and dump settings to use them later
 
-  ```randrctl dump -f home```
+  ```randrctl dump home```
 
 2. After this you can reapply these settings whenever you need them
 
