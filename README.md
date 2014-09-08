@@ -82,6 +82,22 @@ Upcoming features
 * ~~completion functions for popular shells~~
 * per-user profiles and configuration (no need for su/sudo)
 
+Installation
+------------
+
+###Archlinux
+There is AUR package https://aur.archlinux.org/packages/randrctl-git/
+
+###Generic
+
+```
+$ git clone https://github.com/edio/randrctl.git
+$ cd randrctl
+# python setup.py install
+# cp -r etc/randrctl /etc
+# cp etc/randrctl/completion/randrctl.zsh /usr/share/zsh/site-functions/_randrctl
+# cp etc/randrctl/completion/randrctl.bash /usr/share/bash-completion/completions/randrctl
+```
 
 Feedback/contribution
 ---------------------
