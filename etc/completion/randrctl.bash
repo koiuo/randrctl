@@ -16,8 +16,13 @@ _randrctl()
         COMPREPLY=( $(compgen -W "--help --version list dump show switch-to" -- "$cur") )
       ;;
       2)
-        [[ ${COMP_WORDS[COMP_CWORD-1]} = @(show|switch-to) ]] &&
-          mapfile -t COMPREPLY < <(IFS=$'\n'; compgen -W "$(_randrctl_profiles)" -- "$cur")
+        case ${COMP_WORDS[COMP_CWORD-1]} in
+          show|switch-to|dump)
+            mapfile -t COMPREPLY < <(IFS=$'\n'; compgen -W "$(_randrctl_profiles)" -- "$cur")
+          ;;
+          list)
+            COMPREPLY=( $(compgen -W "-l" -- "$cur") )
+        esac
       ;;
     esac
 } &&

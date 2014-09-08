@@ -69,7 +69,7 @@ class RandrCtl:
         for p in profiles:
             print(p.name)
 
-    def list_all_details(self):
+    def list_all_long(self):
         """
         List all available profiles along with some details
         """

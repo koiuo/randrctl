@@ -34,17 +34,18 @@ class Main:
 
         # show
         command_show = commands_parsers.add_parser(SHOW, help='show profile')
-        command_show.add_argument('profile_name', help='name of the profile to show')
+        command_show.add_argument('profile_name', help='name of the profile to show. Show current setup if omitted',
+                                  default=None, nargs='?')
 
         # list
         command_list = commands_parsers.add_parser(LIST, help='list available profiles')
-        command_list.add_argument('-d', action='store_const', const=True, default=False,
-                                  help='print brief profile details instead of just names', dest='details')
+        command_list.add_argument('-l', action='store_const', const=True, default=False,
+                                  help='long listing', dest='long_listing')
 
         #dump
         command_dump = commands_parsers.add_parser(DUMP,
                                                    help='dump current screen setup')
-        command_dump.add_argument('-f', help='store profile to file under profile directory', dest='file_name')
+        command_dump.add_argument('profile_name', help='name of the profile to dump setup to')
 
         args = parser.parse_args(sys.argv[1:])
 
@@ -67,8 +68,8 @@ class Main:
         }[args.command](args)
 
     def list(self, args: argparse.Namespace):
-        if args.details:
-            self.randrctl.list_all_details()
+        if args.long_listing:
+            self.randrctl.list_all_long()
         else:
             self.randrctl.list_all()
 
@@ -76,11 +77,14 @@ class Main:
         self.randrctl.switch_to(args.profile_name)
 
     def show(self, args: argparse.Namespace):
-        self.randrctl.print(args.profile_name)
+        if args.profile_name:
+            self.randrctl.print(args.profile_name)
+        else:
+            self.randrctl.dump_current('current')
 
     def dump(self, args: argparse.Namespace):
-        name = args.file_name
-        self.randrctl.dump_current(name=name, to_file=name is not None)
+        name = args.profile_name
+        self.randrctl.dump_current(name=name, to_file=True)
 
 
 if __name__ == '__main__':

@@ -4,10 +4,15 @@
 
 (( $+function[_randrctl_command] )) ||
 _randrctl_command() {
-    [[ $words[1] = (switch-to|show) ]] &&
-      compadd "${(f)$(find -L /etc/randrctl/profiles -maxdepth 1 -type f -not -name '.*' -not -name '*~' -not -name '*.conf' -not -name '*.service' -printf "%f\n")}"
+    case $words[1] in
+        switch-to|show|dump)
+          compadd "${(f)$(find -L /etc/randrctl/profiles -maxdepth 1 -type f -not -name '.*' -not -name '*~' -not -name '*.conf' -not -name '*.service' -printf "%f\n")}"
+        ;;
+        list)
+          _randrctl_list_options
+        ;;
+    esac
 }
-
 
 _randrctl_commands() {
     local -a _commands
@@ -17,7 +22,15 @@ _randrctl_commands() {
         'show:Show a profile'
         'switch-to:Switch to a profile'
       )
-    _describe "netctl commands" _commands
+    _describe "randrctl commands" _commands
+}
+
+_randrctl_list_options() {
+    local -a _commands
+    _commands=(
+        '-l:long listing'
+      )
+    _describe "randrctl list" _commands
 }
 
 case $CURRENT in
