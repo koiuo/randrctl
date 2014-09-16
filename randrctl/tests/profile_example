@@ -7,15 +7,17 @@
     },
     "outputs": {
         "LVDS1": {
-            "width": 1366,
-            "height": 768,
-            "top": 0,
-            "left": 0
+            "mode": "1366x768"
         },
         "DP1": {
-            "width": 1920,
-            "height": 1080,
-            "left": 1366
+            "mode": "1920x1080",
+            "pos": "1366x0"
+        },
+        "VGA1": {
+            "mode": "800x600",
+            "pos": "3286x0",
+            "panning": "800x1080",
+            "rotate": "inverted"
         }
     },
     "primary": "LVDS1"

@@ -60,15 +60,11 @@ Simple JSON file. Can be edited by hand.
 {
   "outputs": {
     "LVDS1": {
-      "width": 1366,
-      "height": 768,
-      "top": 0,
-      "left": 0
+      "mode": "1366x768"
     },
     "DP1": {
-      "width": 1920,
-      "height": 1080,
-      "left": 1366
+      "mode": "1920x1080",
+      "pos": "1366x0"
     }
   },
   "primary": "DP1"

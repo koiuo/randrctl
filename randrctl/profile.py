@@ -1,4 +1,3 @@
-from functools import reduce
 import logging
 from randrctl.hotplug import Connection
 import os
@@ -32,24 +31,24 @@ class Profile:
 
 
 class Mode:
-    def __init__(self, width: int, height: int, left: int=0, top: int=0):
-        self.width = width
-        self.height = height
-        self.left = left
-        self.top = top
+    def __init__(self, mode: str, pos: str='0x0', rotate: str='normal', panning: str='0x0'):
+        self.mode = mode
+        self.pos = pos
+        self.rotate = rotate
+        self.panning = panning
 
     def __repr__(self):
-        return "{0}x{1}+{2}+{3}".format(self.width, self.height, self.left, self.top)
+        return '+'.join([self.mode, self.pos.replace('x', '+')])
 
     def __eq__(self, other):
         return isinstance(other, Mode) \
-            and self.width == other.width \
-            and self.height == other.height \
-            and self.left == other.left \
-            and self.top == other.top
+            and self.mode == other.mode \
+            and self.pos == other.pos \
+            and self.rotate == other.rotate \
+            and self.panning == other.panning
 
     def __hash__(self):
-        return hash(self.width) ^ hash(self.height) ^ hash(self.left) ^ hash(self.top)
+        return hash(self.mode) ^ hash(self.pos) ^ hash(self.rotate) ^ hash(self.panning)
 
 
 class Output:

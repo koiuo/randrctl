@@ -28,11 +28,13 @@ class Xrandr:
     OUTPUT_KEY = "--output"
     MODE_KEY = "--mode"
     POS_KEY = "--pos"
+    ROTATE_KEY = "--rotate"
+    PANNING_KEY = "--panning"
     PRIMARY_KEY = "--primary"
     QUERY_KEY = "-q"
     OFF_KEY = "--off"
     CONNECTION_REGEX = re.compile("(\w+)\s+(\w+)\s+(?:(?:(primary)\s+)?(\d\S+))?")
-    MODE_REGEX = re.compile("(\d+)x(\d+)\+(\d+)\+(\d+)")
+    MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
 
     def apply(self, profile: Profile):
         """
@@ -70,9 +72,13 @@ class Xrandr:
             args.append(self.OUTPUT_KEY)
             args.append(o.name)
             args.append(self.MODE_KEY)
-            args.append("{0}x{1}".format(o.mode.width, o.mode.height))
+            args.append(o.mode.mode)
             args.append(self.POS_KEY)
-            args.append("{0}x{1}".format(o.mode.left, o.mode.top))
+            args.append(o.mode.pos)
+            args.append(self.ROTATE_KEY)
+            args.append(o.mode.rotate)
+            args.append(self.PANNING_KEY)
+            args.append(o.mode.panning)
             if o.primary:
                 args.append(self.PRIMARY_KEY)
 
@@ -128,8 +134,9 @@ class Xrandr:
         Parses mode string (i.e. 1111x2222+333+444) into Mode object
         """
         match = self.MODE_REGEX.match(s)
-        r = list(map(int, match.groups()))
-        return Mode(*r)
+        mode = match.group(1)
+        pos = match.group(2).replace('+', 'x')
+        return Mode(mode=mode, pos=pos)
 
 
 class XrandrConnection:
