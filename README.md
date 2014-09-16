@@ -46,8 +46,9 @@ randrctl handles this by allowing to declare hooks to be executed before and aft
 
 ```
 [hooks]
-before_apply = /usr/bin/killall -SIGSTOP i3
-after_apply = /usr/bin/killall -SIGCONT i3
+prior_switch = /usr/bin/killall -SIGSTOP i3
+post_switch = /usr/bin/killall -SIGCONT i3
+post_fail = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u critical "randrctl error" "$randr_error"
 ```
 
 Profile format
