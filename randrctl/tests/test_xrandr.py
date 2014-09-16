@@ -1,6 +1,6 @@
 from unittest import TestCase
 from randrctl.profile import Profile, Output
-from randrctl.xrandr import Xrandr, XrandrConnection, Mode
+from randrctl.xrandr import Xrandr, XrandrConnection, Mode, XrandrException
 
 __author__ = 'edio'
 
@@ -66,3 +66,9 @@ class TestXrandr(TestCase):
         expected = Mode(1920, 1080, 100, 200)
         self.assertEqual(expected, m)
 
+    def test_xrandr_exception(self):
+        try:
+            self.xrandr.__xrandr__(["--output", "FOOBAR", "--mode", "800x600+0+0"])
+            self.fail("exception expected")
+        except XrandrException:
+            return

@@ -2,6 +2,7 @@ from configparser import ConfigParser
 import os
 import logging
 import subprocess
+import sys
 
 from randrctl.hotplug import SysfsDevice
 from randrctl.profile import ProfileManager, ProfileMatcher, Profile
@@ -9,6 +10,8 @@ from randrctl.xrandr import Xrandr
 
 
 __author__ = 'edio'
+
+logger = logging.getLogger(__name__)
 
 
 class RandrCtl:
@@ -80,6 +83,44 @@ class RandrCtl:
                 print('  ', o)
 
 
+class Hook:
+    """
+    Intercepts calls to xrandr to support prior-, post-switch and post-fail hooks
+    """
+
+    def __init__(self, prior_switch: str=None, post_switch: str=None, post_fail: str=None):
+        self.prior_switch = prior_switch
+        self.post_switch = post_switch
+        self.post_fail = post_fail
+
+    def decorate(self, xrandr: Xrandr):
+        do_apply = xrandr.apply
+
+        def apply_hook(p: Profile):
+            try:
+                self.hook(self.prior_switch, p)
+                do_apply(p)
+                self.hook(self.post_switch, p)
+            except Exception as e:
+                self.hook(self.post_fail, p, str(e))
+                raise e
+
+        xrandr.apply = apply_hook
+        return xrandr
+
+    def hook(self, hook: str, p: Profile, err: str=None):
+        if hook is not None:
+            try:
+                env = os.environ.copy()
+                env["randr_profile"] = p.name
+                if err:
+                    env["randr_error"] = err
+                logger.debug("Calling '%s'", hook)
+                subprocess.Popen(hook, env=env, shell=True)
+            except Exception as e:
+                logger.warn("Error while executing hook '%s': %s", hook, str(e))
+
+
 class CtlFactory:
     """
     Parses config and creates appropriate Randrctl object
@@ -88,32 +129,27 @@ class CtlFactory:
     config_name = "config.ini"
     profile_dir = "profiles"
 
-    def getRandrCtl(self, home_dir: str):
+    def get_safe(self, config, section, property):
+        return config.get(section, property) if config.has_option(section, property) else None
+
+    def get_randrctl(self, home_dir: str):
         config = ConfigParser(allow_no_value=True, strict=False)
 
-        logging.debug("reading config from %s", os.path.abspath(os.path.join(home_dir, self.config_name)))
+        logger.debug("reading config from %s", os.path.abspath(os.path.join(home_dir, self.config_name)))
         config.read(os.path.join(home_dir, self.config_name))
 
         # profile manager
         profile_reader = ProfileManager(os.path.join(home_dir, self.profile_dir))
 
         # xrandr
-        before_hook = self.run_hook(config.get("hooks", "before_apply")) if config.has_option("hooks",
-                                                                                              "before_apply") else None
-        after_hook = self.run_hook(config.get("hooks", "after_apply")) if config.has_option("hooks",
-                                                                                            "after_apply") else None
-        xrandr = Xrandr(before_hook, after_hook)
+        xrandr = Xrandr()
 
-        # sysfs
-        # sysfs_device = SysfsDevice(config.get("sysfs", "root"), config.get("sysfs", "devpath"))
+        # hooks
+        prior_switch = self.get_safe(config, "hooks", "prior_switch")
+        post_switch = self.get_safe(config, "hooks", "post_switch")
+        post_fail = self.get_safe(config, "hooks", "post_fail")
+        if (prior_switch is not None) | (post_switch is not None) | (post_fail is not None):
+            hook = Hook(prior_switch, post_switch, post_fail)
+            xrandr = hook.decorate(xrandr)
 
         return RandrCtl(profile_reader, xrandr)
-
-    def run_hook(self, hook: str):
-        def hook_fn(p: Profile):
-            if hook is not None:
-                env = os.environ.copy()
-                env["randr_profile"] = p.name
-                subprocess.Popen(hook, env=env, shell=True)
-
-        return hook_fn

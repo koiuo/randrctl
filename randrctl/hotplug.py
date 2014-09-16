@@ -6,6 +6,9 @@ import os
 __author__ = 'edio'
 
 
+logger = logging.getLogger(__name__)
+
+
 def get_devpath(sysfs, devpath_relative):
     return sysfs + devpath_relative
 
@@ -26,7 +29,7 @@ class SysfsDevice:
         prefix = os.path.join(self.devpath, self.devname + '-')
         mask = prefix + "*"
 
-        logging.debug("Searching outputs by mask: {0}".format(mask))
+        logger.debug("Searching outputs by mask: {0}".format(mask))
 
         for output in glob.glob(mask):
             with open(os.path.join(output, 'status')) as status_file:

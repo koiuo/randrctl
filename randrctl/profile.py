@@ -1,11 +1,12 @@
 from functools import reduce
 import logging
 from randrctl.hotplug import Connection
-
-__author__ = 'edio'
-
 import os
 import json
+
+
+__author__ = 'edio'
+logger = logging.getLogger(__name__)
 
 
 class Profile:
@@ -18,11 +19,11 @@ class Profile:
         for connection in connections:
             rule = self.rules.get(connection.output)
             if not rule:
-                logging.debug("Not matched by output name {0}", connection.output)
+                logger.debug("Not matched by output name {0}", connection.output)
                 return False
             for key, value in rule:
                 if getattr(connection, key) != value:
-                    logging.debug("Output {0} has unmatched property {1}", connection.output, key)
+                    logger.debug("Output {0} has unmatched property {1}", connection.output, key)
                     return False
         return True
 
@@ -114,7 +115,7 @@ class ProfileManager:
         safename = os.path.basename(p.name)
         fullname = os.path.join(self.profile_dir_path, safename)
         if safename != p.name:
-            logging.warning("Illegal name provided. Writing as %s", fullname)
+            logger.warning("Illegal name provided. Writing as %s", fullname)
         with open(fullname, 'w+') as fp:
             json.dump(dict, fp, indent=4)
 
@@ -133,7 +134,7 @@ class ProfileManager:
         result = {'outputs': outputs, 'primary': primary}
         return result
 
-    def profile_from_xrandr(self, xrandr_connections: list, name: str=None):
+    def profile_from_xrandr(self, xrandr_connections: list, name: str='profile'):
         outputs = []
         for c in xrandr_connections:
             if not c.connected or c.current_mode is None:
@@ -141,20 +142,9 @@ class ProfileManager:
             output = Output(c.name, c.current_mode, c.primary)
             outputs.append(output)
 
-        logging.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
-
-        if name is None:
-            name = self.guess_name(outputs)
-
-        logging.debug("Name not provided. Guessed %s", name)
+        logger.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
 
         return Profile(name, outputs)
-
-    def guess_name(self, outputs: list):
-        ordered = sorted(outputs, key=lambda o: (not o.primary, o.name))
-        names = list(map(lambda o: o.name, ordered))
-        name = reduce(lambda o1, o2: o1 + "-" + o2, names)
-        return name
 
 
 class ProfileMatcher:
@@ -164,6 +154,6 @@ class ProfileMatcher:
         """
         for p in availableProfiles:
             if p.matches(actualConnections):
-                logging.info("Found matching profile {0}", p.name)
+                logger.info("Found matching profile {0}", p.name)
                 return p
         return None

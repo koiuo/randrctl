@@ -27,15 +27,8 @@ class Test_ProfileManager(TestCase):
 
         p = self.manager.profile_from_xrandr(xc)
 
-        self.assertEqual("DP1-LVDS1", p.name)
+        self.assertEqual("profile", p.name)
         self.assertEqual(2, len(p.outputs))
-
-    def test_guess_name(self):
-        outputs = [Output("LVDS1", Mode(1366, 768, 0, 0), False),
-                   Output("DP1", Mode(1920, 1080, 1366, 0), True)]
-
-        name = self.manager.guess_name(outputs)
-        self.assertEqual("DP1-LVDS1", name, "Should contain all outputs, sorted by name, primary goes first")
 
     def test_to_dict(self):
         with open(self.TEST_PROFILE_FILE) as f:

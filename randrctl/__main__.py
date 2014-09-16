@@ -1,9 +1,12 @@
 import sys
 import argparse
 import randrctl
+import logging
 from randrctl.ctl import CtlFactory
+from randrctl.exception import RandrCtlException
 
 __author__ = 'edio'
+logger = logging.getLogger('randrctl')
 
 DUMP = 'dump'
 LIST = 'list'
@@ -21,6 +24,12 @@ class Main:
 
         parser.add_argument('-v', '--version', help='print version information', action='store_const', const=True,
                             default=False)
+
+        parser.add_argument('-x', help='be verbose', default=False, action='store_const', const=True,
+                            dest='debug')
+
+        parser.add_argument('-xx', help='be even more verbose', default=False, action='store_const', const=True,
+                            dest='extended_debug')
 
         commands_parsers = parser.add_subparsers(title='Available commands',
                                                  description='use "command -h" for details',
@@ -57,15 +66,32 @@ class Main:
             parser.print_help()
             sys.exit(1)
 
-        factory = CtlFactory()
-        self.randrctl = factory.getRandrCtl(HOME_DIR)
+        # configure logging
+        level = logging.WARN
+        format = '%(levelname)-5s %(message)s'
+        if args.debug:
+            level = logging.DEBUG
 
-        {
-            SWITCH_TO: self.switch_to,
-            LIST: self.list,
-            SHOW: self.show,
-            DUMP: self.dump
-        }[args.command](args)
+        if args.extended_debug:
+            level = logging.DEBUG
+            format = '%(levelname)-5s %(name)s: %(message)s'
+
+        logging.basicConfig(format=format, level=level)
+
+        # randrctl
+        factory = CtlFactory()
+        self.randrctl = factory.get_randrctl(HOME_DIR)
+
+        try:
+            {
+                SWITCH_TO: self.switch_to,
+                LIST: self.list,
+                SHOW: self.show,
+                DUMP: self.dump
+            }[args.command](args)
+        except RandrCtlException as e:
+            logger.error(e)
+            sys.exit(1)
 
     def list(self, args: argparse.Namespace):
         if args.long_listing:

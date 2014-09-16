@@ -1,11 +1,22 @@
-from functools import reduce
-
-__author__ = 'edio'
-
 import logging
 import re
 import subprocess
+from randrctl.exception import RandrCtlException, ValidationException
 from randrctl.profile import Profile, Mode
+
+
+__author__ = 'edio'
+logger = logging.getLogger(__name__)
+
+
+class XrandrException(RandrCtlException):
+    """
+    is thrown when call to xrandr fails
+    """
+
+    def __init__(self, err: str, args: list):
+        self.args = args
+        Exception.__init__(self, err)
 
 
 class Xrandr:
@@ -23,41 +34,29 @@ class Xrandr:
     CONNECTION_REGEX = re.compile("(\w+)\s+(\w+)\s+(?:(?:(primary)\s+)?(\d\S+))?")
     MODE_REGEX = re.compile("(\d+)x(\d+)\+(\d+)\+(\d+)")
 
-    def __init__(self, before_apply=None, after_apply=None):
-        """
-        Allows specifying custom functions to be called before and after call to xrandr executable.
-        Passed functions should receive 1 argument (to be changed in future)
-        """
-        self._before_apply = before_apply
-        self._after_apply = after_apply
-
     def apply(self, profile: Profile):
         """
         Apply given profile by calling xrandr
         """
-        logging.debug("Applying profile %s", profile.name)
+        logger.debug("Applying profile %s", profile.name)
 
         args = self.__compose_mode_args__(profile, self.get_all_connections())
-
-        if self._before_apply is not None:
-            self._before_apply(profile)
-
         self.__xrandr__(args)
-
-        if self._after_apply is not None:
-            self._after_apply(profile)
 
     def __xrandr__(self, args: list):
         """
         Perform call to xrandr executable with passed arguments.
         Returns subprocess.Popen object
         """
-        logging.debug("Performing call to xrandr with args %s", args)
+        logger.debug("Calling xrandr with args %s", args)
         args.insert(0, self.EXECUTABLE)
 
-        # TODO fix call to shell
-        line = reduce(lambda x, y: x + ' ' + y, args)
-        return subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        err = p.stderr.readlines()
+        if err:
+            err_str = ''.join(map(lambda x: x.decode(), err)).strip()
+            raise XrandrException(err_str, args)
+        return p
 
     def __compose_mode_args__(self, profile: Profile, xrandr_connections: list):
         """
@@ -95,9 +94,9 @@ class Xrandr:
 
         p = self.__xrandr__([self.QUERY_KEY])
         output = p.stdout.readlines()
-        output.pop(0) # remove first line
+        output.pop(0)  # remove first line
         for line in output:
-            l = line.decode('utf-8')
+            l = line.decode()
             if l[0] == ' ':
                 continue
             c = self.connection_from_str(l)
@@ -113,7 +112,7 @@ class Xrandr:
         """
         match = self.CONNECTION_REGEX.match(s)
         if match is None:
-            raise Exception("'{0}' is not valid xrandr connection".format(s)) # narrow exception
+            raise ValidationException("'{0}' is not valid xrandr connection".format(s))  # narrow exception
 
         name = match.group(1)
         status = match.group(2)
