@@ -5,12 +5,12 @@ Minimalistic profile based screen manager for X. It allows to store current scre
 
 Tool may be usefull to people who work on the same laptop at home, in the office (different external displays and different screen setup) and on the go (no external display).
 
-Currently following features are suppoted
-* dumping current screen setup to file
-* listing available profiles
-* displaying profile details
-* switching between stored profiles
-* running custom commands before/after switch
+Currently randrctl can
+* handle *mode*, *position*, *rotation* and *panning*
+* dump current screen setup to a profile
+* switch between stored profiles
+* list all available profiles and show profile details
+* run custom commands before/after the switch or when it fails for some reason
 
 Usage is very simple:
 
@@ -31,7 +31,7 @@ Usage is very simple:
   ```randrctl show home```
   
 
-Before/After hooks
+Prior/Post hooks
 ------------------
 
 Some window managers (i.e. i3) are known to crash when screen setup is changed. Common workaround for this is:
@@ -42,29 +42,31 @@ xrandr ...
 killall -SIGCONT i3
 ```
 
-randrctl handles this by allowing to declare hooks to be executed before and after call to xrandr. Declare them in /etc/randrctl/config.ini
+randrctl handles this by allowing to declare hooks to be executed before and after call to xrandr. This is also useful if you want to show desktop notification on profile switch or failure. Declare them all in /etc/randrctl/config.ini
 
 ```
 [hooks]
 prior_switch = /usr/bin/killall -SIGSTOP i3
-post_switch = /usr/bin/killall -SIGCONT i3
+post_switch = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u low "randrctl" "switched to $randr_profile"
 post_fail = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u critical "randrctl error" "$randr_error"
 ```
 
 Profile format
 --------------
 
-Simple JSON file. Can be edited by hand.
+Simple text file in JSON format, can be edited manually.
 
 ```
 {
   "outputs": {
     "LVDS1": {
-      "mode": "1366x768"
+      "mode": "1366x768",
+      "panning": "1366x1080
     },
     "DP1": {
       "mode": "1920x1080",
-      "pos": "1366x0"
+      "pos": "1366x0",
+      "rotate": "inverted"
     }
   },
   "primary": "DP1"
