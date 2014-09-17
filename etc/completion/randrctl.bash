@@ -3,7 +3,8 @@
 
 _randrctl_profiles()
 {
-    find -L /etc/randrctl/profiles -maxdepth 1 -type f -not -name '.*' -not -name '*~' -not -name '*.conf' -not -name '*.service' -printf "%f\n"
+    # TODO filter by --system
+    randrctl list
 }
 
 
@@ -13,7 +14,7 @@ _randrctl()
 
     case $COMP_CWORD in
       1)
-        COMPREPLY=( $(compgen -W "--help --version list dump show switch-to" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--help --version --sys list dump show switch-to" -- "$cur") )
       ;;
       2)
         case ${COMP_WORDS[COMP_CWORD-1]} in

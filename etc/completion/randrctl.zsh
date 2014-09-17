@@ -1,47 +1,64 @@
 #compdef randrctl
 
-# Copy this file to /usr/share/zsh/site-functions
+_randrctl_show() {
+    compadd $(_randrctl_profiles)
+}
 
-(( $+function[_randrctl_command] )) ||
+_randrctl_dump() {
+    compadd $(_randrctl_profiles)
+}
+
+_randrctl_switch-to() {
+    compadd $(_randrctl_profiles)
+}
+
+_randrctl_list() {
+    local -a _arguments
+    _arguments=(
+        '-l:use long listing'
+    )
+    # TODO only one instance
+    if (( CURRENT == 2 )); then
+        _describe "list arguments" _arguments
+    else
+        _message "no more arguments"
+    fi
+}
+
+
+_randrctl_profiles() {
+    # TODO filter by --system
+    randrctl list
+}
+
+
 _randrctl_command() {
-    case $words[1] in
-        switch-to|show|dump)
-          compadd "${(f)$(find -L /etc/randrctl/profiles -maxdepth 1 -type f -not -name '.*' -not -name '*~' -not -name '*.conf' -not -name '*.service' -printf "%f\n")}"
-        ;;
-        list)
-          _randrctl_list_options
-        ;;
-    esac
+    local -a _randrctl_cmds
+    _randrctl_cmds=(
+        'dump:Show current locale settings'
+        'list:Set system locale'
+        'show:Show known locales'
+        'switch-to:Set virtual console keyboard mapping'
+    )
+    if (( CURRENT == 1 )); then
+        _describe -t commands 'randrctl command' _randrctl_cmds
+    else
+        local curcontext="$curcontext"
+        cmd="${${_randrctl_cmds[(r)$words[1]:*]%%:*}}"
+        if (( $+functions[_randrctl_$cmd] )); then
+            curcontext="${curcontext%:*:*}:systemctl-${cmd}:"
+            _randrctl_$cmd
+        else
+            _message "unknown randrctl command: $words[1]"
+        fi
+    fi
 }
 
-_randrctl_commands() {
-    local -a _commands
-    _commands=(
-        'list:List available profiles'
-        'dump:Dump current settings to profile'
-        'show:Show a profile'
-        'switch-to:Switch to a profile'
-      )
-    _describe "randrctl commands" _commands
-}
+_arguments \
+    {-h,--help}'[Show this help]' \
+    {-v,--version}'[Show package version]' \
+    "-x[Don't convert keyboard mappings]" \
+    '-X[Do not pipe output into a pager]' \
+    '--system[Do not prompt for password]' \
+    '*::randrctl commands:_randrctl_command'
 
-_randrctl_list_options() {
-    local -a _commands
-    _commands=(
-        '-l:long listing'
-      )
-    _describe "randrctl list" _commands
-}
-
-case $CURRENT in
-      2)
-        _arguments \
-          '(- :)--help[display help message]' \
-          '(-)::randrctl commands:_randrctl_commands'
-      ;;
-      3)
-        shift words
-        [[ $words[1] != -* ]] &&
-          curcontext="${curcontext%:*}-${words[1]}:" _randrctl_command
-      ;;
-esac
