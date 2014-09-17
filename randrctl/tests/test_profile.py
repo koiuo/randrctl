@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase
 from randrctl.profile import ProfileManager, Output
-from randrctl.xrandr import XrandrConnection, Mode
+from randrctl.xrandr import XrandrOutput, Geometry
 
 __author__ = 'edio'
 
@@ -16,16 +16,16 @@ class Test_ProfileManager(TestCase):
             p = self.manager.read_file(f)
 
             self.assertIsNotNone(p)
-            self.assertSetEqual(set([Output("LVDS1", Mode("1366x768"), True),
-                                     Output("DP1", Mode("1920x1080", pos="1366x0"), False),
-                                     Output("VGA1", Mode("800x600", pos="3286x0", rotate="inverted",
+            self.assertSetEqual(set([Output("LVDS1", Geometry("1366x768"), True),
+                                     Output("DP1", Geometry("1920x1080", pos="1366x0"), False),
+                                     Output("VGA1", Geometry("800x600", pos="3286x0", rotate="inverted",
                                                          panning="800x1080"), False)]), set(p.outputs))
             self.assertEqual({"DP1": {"edid": "base64encoded"}, "LVDS1": {}}, p.rules)
 
     def test_profile_from_xrandr(self):
-        xc = [XrandrConnection("LVDS1", True, Mode("1366x768"), False),
-              XrandrConnection("DP1", True, Mode("1920x1080", pos="1366x0"), True),
-              XrandrConnection("HDMI1", False, Mode("1366x768"), False)]
+        xc = [XrandrOutput("LVDS1", True, Geometry("1366x768"), False),
+              XrandrOutput("DP1", True, Geometry("1920x1080", pos="1366x0"), True),
+              XrandrOutput("HDMI1", False, Geometry("1366x768"), False)]
 
         p = self.manager.profile_from_xrandr(xc)
 

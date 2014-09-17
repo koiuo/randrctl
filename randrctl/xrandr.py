@@ -1,8 +1,9 @@
+from functools import reduce
 import logging
 import re
 import subprocess
 from randrctl.exception import RandrCtlException, ValidationException
-from randrctl.profile import Profile, Mode
+from randrctl.profile import Profile, Geometry
 
 
 __author__ = 'edio'
@@ -33,7 +34,7 @@ class Xrandr:
     PRIMARY_KEY = "--primary"
     QUERY_KEY = "-q"
     OFF_KEY = "--off"
-    CONNECTION_REGEX = re.compile("(\w+)\s+(\w+)\s+(?:(?:(primary)\s+)?(\d\S+))?")
+    OUTPUT_DETAILS_REGEX = re.compile('(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*$')
     MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
 
     def apply(self, profile: Profile):
@@ -72,13 +73,13 @@ class Xrandr:
             args.append(self.OUTPUT_KEY)
             args.append(o.name)
             args.append(self.MODE_KEY)
-            args.append(o.mode.mode)
+            args.append(o.geometry.mode)
             args.append(self.POS_KEY)
-            args.append(o.mode.pos)
+            args.append(o.geometry.pos)
             args.append(self.ROTATE_KEY)
-            args.append(o.mode.rotate)
+            args.append(o.geometry.rotate)
             args.append(self.PANNING_KEY)
-            args.append(o.mode.panning)
+            args.append(o.geometry.panning)
             if o.primary:
                 args.append(self.PRIMARY_KEY)
 
@@ -99,52 +100,137 @@ class Xrandr:
         connections = []
 
         p = self.__xrandr__([self.QUERY_KEY])
-        output = p.stdout.readlines()
-        output.pop(0)  # remove first line
-        for line in output:
-            l = line.decode()
-            if l[0] == ' ':
-                continue
-            c = self.connection_from_str(l)
-            connections.append(c)
+        query_result = p.stdout.readlines()
+        query_result.pop(0)  # remove first line. It describes Screen
 
+        items = self.group_query_result(map(lambda x: x.decode(), query_result))
+
+        for i in items:
+            c = self.output_from_query_item(i)
+            connections.append(c)
         return connections
 
-    def connection_from_str(self, s: str):
+    def output_from_query_item(self, item_lines: list):
+        """
+        Creates XrandrOutput from lines returned by xrandr --query.
+        First line is an output description. Subsequent, if any, are supported modes.
+        Example:
+        LVDS1 connected 1366x768+0+312 (normal left inverted right x axis y axis) 277mm x 156mm
+           1366x768      60.02*+
+           1024x768      60.00
+        """
+        output_info = item_lines[0]
+
+        tokens = output_info.split(' ', 2)
+        name = tokens[0]
+        status = tokens[1]
+        connected = status == 'connected'
+
+        if not connected:
+            # if we are not connected, do not parse the rest
+            return XrandrOutput(name, connected)
+
+        # we are connected parse supported modes
+        supported_modes = []
+        preferred_mode = None
+        current_mode = None
+        for mode_line in item_lines[1:]:
+            mode_line = mode_line.strip()
+            current = (mode_line.find("*") >= 0)
+            preferred = (mode_line.find("+") >= 0)
+            mode = mode_line[:mode_line.find(" ")]
+            supported_modes.append(mode)
+            if current:
+                current_mode = mode
+            if preferred:
+                preferred_mode = mode
+
+        if current_mode is None:
+            # inactive output
+            return XrandrOutput(name, connected, supported_modes=supported_modes, preferred_mode=preferred_mode)
+
+        # if we are active parse the rest and return full-blown output
+        details = tokens[2]
+        output_details = self.parse_output_details(details)
+
+        res = output_details['res']
+        pos = output_details['pos']
+        primary = output_details['primary']
+        rotate = output_details['rotate']
+
+        panning = res if res != current_mode else '0x0'
+        rotate = rotate if rotate else 'normal'
+
+        geometry = Geometry(current_mode, pos, rotate, panning)
+
+        return XrandrOutput(name, connected, geometry, primary, supported_modes, preferred_mode)
+
+    def group_query_result(self, query_result: list):
+        def group_fn(x, y):
+            if type(x) is str:
+                if y.startswith(' '):
+                    return [[x, y]]
+                else:
+                    return [[x], [y]]
+            else:
+                if y.startswith(' '):
+                    last = x[len(x) - 1]
+                    last.append(y)
+                    return x
+                else:
+                    x.append([y])
+                    return x
+
+        grouped = reduce(lambda x, y: group_fn(x, y), query_result)
+
+        return grouped
+
+    def parse_output_details(self, s: str):
         """
         Creates connection from line provided by xrandr output.
         Param s: line from xrandr output.
-        Example: LVDS1 connected 1366x768+0+312 (normal left inverted right x axis y axis) 277mm x 156mm
+        Example:
+        primary 1366x1080+0+0 left (normal left inverted right x axis y axis) 277mm x 156mm panning 1366x1080+0+0
         """
-        match = self.CONNECTION_REGEX.match(s)
+        match = self.OUTPUT_DETAILS_REGEX.match(s)
         if match is None:
-            raise ValidationException("'{0}' is not valid xrandr connection".format(s))  # narrow exception
+            # we got inactive output
+            return {}
 
-        name = match.group(1)
-        status = match.group(2)
+        is_primary = match.group('primary') is not None
+        geometry_string = match.group('geometry')
+        rotate = match.group('rotate')
 
-        primary = match.group(3) is not None
-        mode_str = match.group(4)
-        mode = self.mode_from_str(mode_str) if mode_str is not None else None
+        geometry_tokens = self.parse_geometry(geometry_string)
+        res = geometry_tokens[0]
+        pos = geometry_tokens[1]
 
-        return XrandrConnection(name, connected=(status == 'connected'), primary=primary, current_mode=mode)
+        all = {'primary': is_primary, 'pos': pos, 'res': res, 'rotate': rotate}
 
-    def mode_from_str(self, s:str):
+        return all
+
+    def parse_geometry(self, s: str):
         """
-        Parses mode string (i.e. 1111x2222+333+444) into Mode object
+        Parses geometry string (i.e. 1111x2222+333+444) into tuple (widthxheight, leftxtop)
         """
         match = self.MODE_REGEX.match(s)
         mode = match.group(1)
         pos = match.group(2).replace('+', 'x')
-        return Mode(mode=mode, pos=pos)
+        return mode, pos
 
 
-class XrandrConnection:
-    def __init__(self, name: str, connected: bool=False, current_mode: Mode=None, primary: bool=False):
+class XrandrOutput:
+    def __init__(self, name: str, connected: bool=False, current_geometry: Geometry=None, primary: bool=False,
+                 supported_modes: list=None, preferred_mode=None):
         self.name = name
         self.connected = connected
-        self.current_mode = current_mode
+        self.current_geometry = current_geometry
         self.primary = primary
+        self.supported_modes = supported_modes
+        self.preferred_mode = preferred_mode
+
+    def is_active(self):
+        return self.current_geometry is not None
 
 
 

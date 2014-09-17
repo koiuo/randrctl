@@ -30,7 +30,7 @@ class Profile:
         return self.name + str(self.outputs)
 
 
-class Mode:
+class Geometry:
     def __init__(self, mode: str, pos: str='0x0', rotate: str='normal', panning: str='0x0'):
         self.mode = mode
         self.pos = pos
@@ -41,7 +41,7 @@ class Mode:
         return '+'.join([self.mode, self.pos.replace('x', '+')])
 
     def __eq__(self, other):
-        return isinstance(other, Mode) \
+        return isinstance(other, Geometry) \
             and self.mode == other.mode \
             and self.pos == other.pos \
             and self.rotate == other.rotate \
@@ -52,22 +52,22 @@ class Mode:
 
 
 class Output:
-    def __init__(self, name: str, mode: Mode, primary: bool=False):
+    def __init__(self, name: str, geometry: Geometry, primary: bool=False):
         self.name = name
-        self.mode = mode
+        self.geometry = geometry
         self.primary = primary
 
     def __eq__(self, obj):
         return isinstance(obj, Output) \
             and obj.name == self.name \
-            and obj.mode == self.mode \
+            and obj.geometry == self.geometry \
             and obj.primary == self.primary
 
     def __repr__(self):
-        return "{0}{{{1}}}".format(self.name, self.mode, ", primary" if self.primary else "")
+        return "{0}{{{1}}}".format(self.name, self.geometry, ", primary" if self.primary else "")
 
     def __hash__(self):
-        return hash(self.name) ^ hash(self.primary) ^ (0 if self.mode is None else self.mode.__hash__())
+        return hash(self.name) ^ hash(self.primary) ^ (0 if self.geometry is None else self.geometry.__hash__())
 
 
 class ProfileManager:
@@ -96,7 +96,7 @@ class ProfileManager:
         outputs_raw = result['outputs']
         outputs = []
         for name, mode_raw in outputs_raw.items():
-            mode = Mode(**mode_raw)
+            mode = Geometry(**mode_raw)
             output = Output(name, mode, primary == name)
             outputs.append(output)
 
@@ -126,7 +126,7 @@ class ProfileManager:
         outputs = {}
         primary = None
         for o in p.outputs:
-            outputs[o.name] = o.mode.__dict__
+            outputs[o.name] = o.geometry.__dict__
             if o.primary:
                 primary = o.name
 
@@ -136,9 +136,9 @@ class ProfileManager:
     def profile_from_xrandr(self, xrandr_connections: list, name: str='profile'):
         outputs = []
         for c in xrandr_connections:
-            if not c.connected or c.current_mode is None:
+            if not c.connected or c.current_geometry is None:
                 continue
-            output = Output(c.name, c.current_mode, c.primary)
+            output = Output(c.name, c.current_geometry, c.primary)
             outputs.append(output)
 
         logger.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
