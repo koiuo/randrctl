@@ -1,4 +1,5 @@
 import logging
+from randrctl.exception import InvalidProfileException
 from randrctl.hotplug import Connection
 import os
 import json
@@ -42,9 +43,9 @@ class Geometry:
 
     def __eq__(self, other):
         return isinstance(other, Geometry) \
-            and self.mode == other.mode \
-            and self.pos == other.pos \
-            and self.rotate == other.rotate \
+                   and self.mode == other.mode \
+                   and self.pos == other.pos \
+                   and self.rotate == other.rotate \
             and self.panning == other.panning
 
     def __hash__(self):
@@ -59,8 +60,8 @@ class Output:
 
     def __eq__(self, obj):
         return isinstance(obj, Output) \
-            and obj.name == self.name \
-            and obj.geometry == self.geometry \
+                   and obj.name == self.name \
+                   and obj.geometry == self.geometry \
             and obj.primary == self.primary
 
     def __repr__(self):
@@ -71,38 +72,55 @@ class Output:
 
 
 class ProfileManager:
-    def __init__(self, profile_dir_path: str):
-        self.profile_dir_path = profile_dir_path
+    def __init__(self, profile_dirs: list):
+        """
+        Create profile manager that searches for profiles under paths passed as a list.
+        Paths should be expanded and must exist.
+        The first one is considered preferred and will be used for writes and will prevail in case of names conflicts.
+        """
+        self.profile_dirs = profile_dirs
+        self.preferred_profile_dir = profile_dirs[0]
 
     def read_all(self):
         profiles = []
-        for entry in os.listdir(self.profile_dir_path):
-            path = os.path.join(self.profile_dir_path, entry)
-            if os.path.isfile(path):
-                with open(path) as profile_file:
-                    profiles.append(self.read_file(profile_file))
+        for profile_dir in self.profile_dirs:
+            for entry in os.listdir(profile_dir):
+                path = os.path.join(profile_dir, entry)
+                if os.path.isfile(path):
+                    try:
+                        with open(path) as profile_file:
+                            profiles.append(self.read_file(profile_file))
+                    except InvalidProfileException as e:
+                        logger.warn(e)
         return profiles
 
     def read_one(self, profile_name: str):
-        with open(os.path.join(self.profile_dir_path, profile_name)) as profile_file:
-            return self.read_file(profile_file)
+        for profile_dir in self.profile_dirs:
+            profile_path = os.path.join(profile_dir, profile_name)
+            if not os.path.isfile(profile_path):
+                continue
+            with open(profile_path) as profile_file:
+                return self.read_file(profile_file)
 
     def read_file(self, profile_file_descriptor):
-        result = json.load(profile_file_descriptor)
+        try:
+            result = json.load(profile_file_descriptor)
 
-        rules = result.get('match')
+            rules = result.get('match')
 
-        primary = result['primary']
-        outputs_raw = result['outputs']
-        outputs = []
-        for name, mode_raw in outputs_raw.items():
-            mode = Geometry(**mode_raw)
-            output = Output(name, mode, primary == name)
-            outputs.append(output)
+            primary = result['primary']
+            outputs_raw = result['outputs']
+            outputs = []
+            for name, mode_raw in outputs_raw.items():
+                mode = Geometry(**mode_raw)
+                output = Output(name, mode, primary == name)
+                outputs.append(output)
 
-        name = os.path.basename(profile_file_descriptor.name)
+            name = os.path.basename(profile_file_descriptor.name)
 
-        return Profile(name, outputs, rules)
+            return Profile(name, outputs, rules)
+        except (KeyError, ValueError):
+            raise InvalidProfileException(profile_file_descriptor.name)
 
     def write(self, p: Profile):
         """
@@ -112,7 +130,7 @@ class ProfileManager:
         """
         dict = self.to_dict(p)
         safename = os.path.basename(p.name)
-        fullname = os.path.join(self.profile_dir_path, safename)
+        fullname = os.path.join(self.preferred_profile_dir, safename)
         if safename != p.name:
             logger.warning("Illegal name provided. Writing as %s", fullname)
         with open(fullname, 'w+') as fp:

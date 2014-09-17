@@ -1,9 +1,13 @@
+import os
 import sys
 import argparse
-import randrctl
+
 import logging
+
+import randrctl
 from randrctl.ctl import CtlFactory
 from randrctl.exception import RandrCtlException
+
 
 __author__ = 'edio'
 logger = logging.getLogger('randrctl')
@@ -13,23 +17,28 @@ LIST = 'list'
 SWITCH_TO = 'switch-to'
 SHOW = 'show'
 
-HOME_DIR = "/etc/randrctl"
+SYS_HOME_DIR = "/etc/randrctl/"
+USER_HOME_DIR = "~/.config/randrctl/"
+HOMES = [USER_HOME_DIR, SYS_HOME_DIR]
 
 
 class Main:
     def run(self):
-        parser = argparse.ArgumentParser(prog='randrctl',
-                                         formatter_class=lambda prog: argparse.HelpFormatter(prog,
-                                                                                             max_help_position=30))
+        parser = argparse.ArgumentParser(prog='randrctl')
 
-        parser.add_argument('-v', '--version', help='print version information', action='store_const', const=True,
-                            default=False)
+        parser.add_argument('-v', '--version', help='print version information and exit', action='store_const',
+                            const=True, default=False)
 
         parser.add_argument('-x', help='be verbose', default=False, action='store_const', const=True,
                             dest='debug')
 
         parser.add_argument('-xx', help='be even more verbose', default=False, action='store_const', const=True,
                             dest='extended_debug')
+
+        parser.add_argument('--sys',
+                            help="read profiles and config only from {}. By default {} are used".format(SYS_HOME_DIR,
+                                                                                                        HOMES),
+                            action='store_const', const=True, default=False, dest="sys")
 
         commands_parsers = parser.add_subparsers(title='Available commands',
                                                  description='use "command -h" for details',
@@ -78,9 +87,12 @@ class Main:
 
         logging.basicConfig(format=format, level=level)
 
+        homes = [SYS_HOME_DIR] if args.sys else [os.path.expanduser(USER_HOME_DIR), SYS_HOME_DIR]
+
         # randrctl
-        factory = CtlFactory()
-        self.randrctl = factory.get_randrctl(HOME_DIR)
+        factory = CtlFactory(homes)
+        factory.ensure_homes()
+        self.randrctl = factory.get_randrctl()
 
         try:
             {

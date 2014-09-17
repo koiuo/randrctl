@@ -13,3 +13,10 @@ class ValidationException(RandrCtlException):
     """
 
 
+class InvalidProfileException(RandrCtlException):
+    """
+    Is thrown when profile is invalid
+    """
+    def __init__(self, profile_path: str):
+        self.profile_path = profile_path
+        Exception.__init__(self, "Invalid profile {}".format(profile_path))
