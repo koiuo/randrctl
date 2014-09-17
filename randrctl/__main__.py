@@ -32,10 +32,10 @@ class Main:
         parser.add_argument('-x', help='be verbose', default=False, action='store_const', const=True,
                             dest='debug')
 
-        parser.add_argument('-xx', help='be even more verbose', default=False, action='store_const', const=True,
+        parser.add_argument('-X', help='be even more verbose', default=False, action='store_const', const=True,
                             dest='extended_debug')
 
-        parser.add_argument('--sys',
+        parser.add_argument('--system',
                             help="read profiles and config only from {}. By default {} are used".format(SYS_HOME_DIR,
                                                                                                         HOMES),
                             action='store_const', const=True, default=False, dest="sys")
