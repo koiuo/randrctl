@@ -48,7 +48,7 @@ class RandrCtl:
         """
         Dump current profile under specified name. Only xrandr settings are dumped
         """
-        xrandr_connections = self.xrandr.get_all_outputs()
+        xrandr_connections = self.xrandr.get_connected_outputs()
         profile = self.profile_manager.profile_from_xrandr(xrandr_connections, name)
 
         if to_file:

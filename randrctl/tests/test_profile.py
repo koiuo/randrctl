@@ -31,7 +31,7 @@ class Test_ProfileManager(TestCase):
 
             self.assertIsNotNone(p)
             self.assertSetEqual(set([Output("LVDS1", Geometry("1366x768"), True)]), set(p.outputs))
-            self.assertSetEqual(set(), p.rules)
+            self.assertSetEqual(set(), set(p.rules))
 
     def test_profile_from_xrandr(self):
         xc = [XrandrOutput("LVDS1", True, Geometry("1366x768"), False),
@@ -48,8 +48,11 @@ class Test_ProfileManager(TestCase):
             p = self.manager.read_file(f)
 
             d = self.manager.to_dict(p)
+            self.maxDiff = None
             self.assertDictEqual(
                 {'primary': 'LVDS1',
+                 'match': {'LVDS1': {'edid': None, 'mode': None},
+                           'DP1': {'edid': "d8578edf8458ce06fbc5bb76a58c5ca4", 'mode': "1920x1080"}},
                  'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
                              'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
@@ -85,7 +88,7 @@ class Test_ProfileMatcher(TestCase):
         outputs = [
             XrandrOutput("LVDS1", True)
         ]
-        best = self.matcher.find_best(profiles, outputs)
+        best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[0], best)
 
     def test_find_best_no_match(self):

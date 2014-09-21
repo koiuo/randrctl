@@ -1,4 +1,5 @@
 from functools import reduce
+import hashlib
 import logging
 import re
 import subprocess
@@ -124,7 +125,7 @@ class Xrandr:
         outputs = list(filter(lambda o: o.connected, self.get_all_outputs()))
         edids = self.get_edids()
         for o in outputs:
-            o.edid = edids[o.name]
+            o.edid = hashlib.md5(edids[o.name].encode()).hexdigest()
         logger.debug("Connected outputs: %s", outputs)
         return outputs
 

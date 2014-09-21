@@ -1,3 +1,4 @@
+import hashlib
 import logging
 # from randrctl.xrandr import XrandrOutput # TODO resolve circular import
 from randrctl.exception import InvalidProfileException
@@ -175,26 +176,33 @@ class ProfileManager:
 
     def to_dict(self, p: Profile):
         outputs = {}
+        rules = {}
         primary = None
         for o in p.outputs:
             outputs[o.name] = o.geometry.__dict__
             if o.primary:
                 primary = o.name
 
-        result = {'outputs': outputs, 'primary': primary}
+        for o, r in p.rules.items():
+            rules[o] = r.__dict__
+
+        result = {'outputs': outputs, 'primary': primary, 'match': rules}
         return result
 
     def profile_from_xrandr(self, xrandr_connections: list, name: str='profile'):
         outputs = []
+        rules = {}
         for c in xrandr_connections:
             if not c.connected or c.current_geometry is None:
                 continue
             output = Output(c.name, c.current_geometry, c.primary)
             outputs.append(output)
+            rule = Rule(c.edid, c.current_geometry.mode)
+            rules[c.name] = rule
 
         logger.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
 
-        return Profile(name, outputs)
+        return Profile(name, outputs, rules)
 
 
 class ProfileMatcher:
