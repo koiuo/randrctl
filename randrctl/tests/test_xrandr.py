@@ -1,7 +1,7 @@
 from unittest import TestCase
-from randrctl.exception import ValidationException
-from randrctl.profile import Profile, Output
-from randrctl.xrandr import Xrandr, XrandrOutput, Geometry, XrandrException
+from randrctl.exception import ValidationException, XrandrException
+from randrctl.model import Profile, Geometry, Output, XrandrOutput
+from randrctl.xrandr import Xrandr
 
 __author__ = 'edio'
 

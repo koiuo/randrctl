@@ -1,102 +1,12 @@
-import hashlib
 import logging
-# from randrctl.xrandr import XrandrOutput # TODO resolve circular import
 from randrctl.exception import InvalidProfileException
 import os
 import json
+from randrctl.model import Profile, Rule, Geometry, Output, XrandrOutput
 
 
 __author__ = 'edio'
 logger = logging.getLogger(__name__)
-
-
-class Profile:
-    def __init__(self, name, outputs: list, rules: dict={}):
-        self.name = name
-        self.outputs = outputs
-        self.rules = rules
-
-    def __repr__(self):
-        return self.name + str(self.outputs)
-
-
-class Rule:
-    """
-    Rule to match profile to xrandr connections
-    """
-    def __init__(self, edid: str=None, mode: str=None):
-        """
-        param edid: edid of a display to match
-        param mode: supported mode of a display to match
-        """
-        self.edid = edid
-        self.mode = mode
-
-    def __eq__(self, other):
-        return isinstance(other, Rule) and self.edid == other.edid and self.mode == other.mode
-
-    def score(self, xrandr_output):
-        """
-        TODO doc
-        1 if match is not needed by a criterion (i.e. edid is not set, mode is not set)
-        2 if matches by supported mode
-        3 if matches by edid
-        returns sum of scores, -1 if doesn't match
-        """
-
-        score = 0
-        if self.edid:
-            if self.edid == xrandr_output.edid:
-                score += 2
-            else:
-                return -1
-
-        if self.mode:
-            if xrandr_output.supported_modes.count(self.mode) > 0:
-                score += 1
-            else:
-                return -1
-        return score
-
-
-class Geometry:
-    def __init__(self, mode: str, pos: str='0x0', rotate: str='normal', panning: str='0x0'):
-        self.mode = mode
-        self.pos = pos
-        self.rotate = rotate
-        self.panning = panning
-
-    def __repr__(self):
-        return '+'.join([self.mode, self.pos.replace('x', '+')])
-
-    def __eq__(self, other):
-        return isinstance(other, Geometry) \
-                   and self.mode == other.mode \
-                   and self.pos == other.pos \
-                   and self.rotate == other.rotate \
-            and self.panning == other.panning
-
-    def __hash__(self):
-        return hash(self.mode) ^ hash(self.pos) ^ hash(self.rotate) ^ hash(self.panning)
-
-
-class Output:
-    def __init__(self, name: str, geometry: Geometry, primary: bool=False):
-        self.name = name
-        self.geometry = geometry
-        self.primary = primary
-
-    def __eq__(self, obj):
-        return isinstance(obj, Output) \
-                   and obj.name == self.name \
-                   and obj.geometry == self.geometry \
-            and obj.primary == self.primary
-
-    def __repr__(self):
-        return "{0}{{{1}}}".format(self.name, self.geometry, ", primary" if self.primary else "")
-
-    def __hash__(self):
-        return hash(self.name) ^ hash(self.primary) ^ (0 if self.geometry is None else self.geometry.__hash__())
 
 
 class ProfileManager:
@@ -193,7 +103,7 @@ class ProfileManager:
         outputs = []
         rules = {}
         for c in xrandr_connections:
-            if not c.connected or c.current_geometry is None:
+            if not c.connected or not c.is_active():
                 continue
             output = Output(c.name, c.current_geometry, c.primary)
             outputs.append(output)
@@ -225,19 +135,7 @@ class ProfileMatcher:
 
         matching = []
         for p in profiles:
-            score = 0
-            logger.debug("Trying profile %s", p.name)
-            for o in xrandr_outputs:
-                rule = p.rules.get(o.name)
-                s = rule.score(o)
-                logger.debug("%s scored %d for output %s", p.name, s, o.name)
-                if s >= 0:
-                    score += s
-                else:
-                    logger.debug("%s doesn't match %s", p.name, o.name)
-                    score = -1
-                    break
-            logger.debug("%s total score: %d", p.name, s)
+            score = self.calculate_profile_score(p, xrandr_outputs)
             if score >= 0:
                 matching.append((score, p))
 
@@ -247,3 +145,46 @@ class ProfileMatcher:
             return p
         else:
             return None
+
+    def calculate_profile_score(self, p: Profile, xrandr_outputs: list):
+        """
+        Calculate how profile matches passed specific outputs.
+        Return numeric score
+        """
+        score = 0
+        logger.debug("Trying profile %s", p.name)
+        for o in xrandr_outputs:
+            rule = p.rules.get(o.name)
+            s = self.score_rule(rule, o)
+            logger.debug("%s scored %d for output %s", p.name, s, o.name)
+            if s >= 0:
+                score += s
+            else:
+                logger.debug("%s doesn't match %s", p.name, o.name)
+                score = -1
+                break
+        logger.debug("%s total score: %d", p.name, s)
+        return score
+
+    def score_rule(self, rule: Rule, xrandr_output: XrandrOutput):
+        """
+        TODO doc
+        1 if match is not needed by a criterion (i.e. edid is not set, mode is not set)
+        2 if matches by supported mode
+        3 if matches by edid
+        returns sum of scores, -1 if doesn't match
+        """
+        score = 0
+        if rule.edid:
+            if rule.edid == xrandr_output.edid:
+                score += 2
+            else:
+                return -1
+
+        if rule.mode:
+            if xrandr_output.supported_modes.count(rule.mode) > 0:
+                score += 1
+            else:
+                return -1
+        return score
+

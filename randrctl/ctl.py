@@ -3,8 +3,9 @@ import os
 import logging
 import subprocess
 import sys
+from randrctl.model import Profile
 
-from randrctl.profile import ProfileManager, ProfileMatcher, Profile
+from randrctl.profile import ProfileManager, ProfileMatcher
 from randrctl.xrandr import Xrandr
 
 

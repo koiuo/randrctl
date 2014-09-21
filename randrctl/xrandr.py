@@ -3,22 +3,12 @@ import hashlib
 import logging
 import re
 import subprocess
-from randrctl.exception import RandrCtlException, ValidationException
-from randrctl.profile import Profile, Geometry
+from randrctl.exception import XrandrException
+from randrctl.model import Profile, Geometry, XrandrOutput
 
 
 __author__ = 'edio'
 logger = logging.getLogger(__name__)
-
-
-class XrandrException(RandrCtlException):
-    """
-    is thrown when call to xrandr fails
-    """
-
-    def __init__(self, err: str, args: list):
-        self.args = args
-        Exception.__init__(self, err)
 
 
 class Xrandr:
@@ -271,21 +261,6 @@ class Xrandr:
         mode = match.group(1)
         pos = match.group(2).replace('+', 'x')
         return mode, pos
-
-
-class XrandrOutput:
-    def __init__(self, name: str, connected: bool=False, current_geometry: Geometry=None, primary: bool=False,
-                 supported_modes: list=None, preferred_mode=None, edid: str=None):
-        self.name = name
-        self.connected = connected
-        self.current_geometry = current_geometry
-        self.primary = primary
-        self.supported_modes = supported_modes
-        self.preferred_mode = preferred_mode
-        self.edid = edid
-
-    def is_active(self):
-        return self.current_geometry is not None
 
 
 

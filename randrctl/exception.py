@@ -20,3 +20,13 @@ class InvalidProfileException(RandrCtlException):
     def __init__(self, profile_path: str):
         self.profile_path = profile_path
         Exception.__init__(self, "Invalid profile {}".format(profile_path))
+
+
+class XrandrException(RandrCtlException):
+    """
+    is thrown when call to xrandr fails
+    """
+
+    def __init__(self, err: str, args: list):
+        self.args = args
+        Exception.__init__(self, err)

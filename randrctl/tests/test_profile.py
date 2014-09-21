@@ -1,8 +1,8 @@
 import logging
 import os
 from unittest import TestCase
-from randrctl.profile import ProfileManager, Output, Rule, ProfileMatcher, Profile
-from randrctl.xrandr import XrandrOutput, Geometry
+from randrctl.model import Profile, Rule, Geometry, Output, XrandrOutput
+from randrctl.profile import ProfileManager, ProfileMatcher
 
 __author__ = 'edio'
 
