@@ -1,4 +1,10 @@
 {
+    "match":{
+        "LVDS1": {},
+        "DP1": {
+            "edid": "d8578edf8458ce06fbc5bb76a58c5ca4"
+        }
+    },
     "outputs": {
         "LVDS1": {
             "mode": "1366x768",

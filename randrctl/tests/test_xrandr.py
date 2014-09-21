@@ -79,4 +79,26 @@ class TestXrandr(TestCase):
         self.assertListEqual(query_result[7:], grouped[3])
 
     def test_test(self):
-        self.xrandr.output_from_query_item(["LVDS1 connected 100x100+0+0 left (foo bar) 10mm x 10mm panning 100x100+0+0"])
+        self.xrandr.get_edids()
+
+    def test_edid_from_query_item(self):
+        query_result = ["LVDS1 connected foo bar",
+                        "\tIdentifier: 0x45",
+                        "\tTimestamp: 123456789",
+                        "\tEDID:",
+                        "\t\t0",
+                        "\t\t1",
+                        "\t\t2",
+                        "\t\t3",
+                        "\t\t4",
+                        "\t\t5",
+                        "\t\t6",
+                        "\t\t7",
+                        "\tBroadcast RGB: Automatic",
+                        "\t\tsupported: Automatic, Full",
+                        "\taudio: auto",
+                        "\t\tsupported: auto, on"
+                        ]
+
+        edid = self.xrandr.edid_from_query_item(query_result)
+        self.assertEqual("01234567", edid)

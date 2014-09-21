@@ -1,4 +1,5 @@
 import logging
+# from randrctl.xrandr import XrandrOutput # TODO resolve circular import
 from randrctl.exception import InvalidProfileException
 import os
 import json
@@ -14,20 +15,47 @@ class Profile:
         self.outputs = outputs
         self.rules = rules
 
-    # def matches(self, *connections: Connection):
-    #     for connection in connections:
-    #         rule = self.rules.get(connection.output)
-    #         if not rule:
-    #             logger.debug("Not matched by output name {0}", connection.output)
-    #             return False
-    #         for key, value in rule:
-    #             if getattr(connection, key) != value:
-    #                 logger.debug("Output {0} has unmatched property {1}", connection.output, key)
-    #                 return False
-    #     return True
-
     def __repr__(self):
         return self.name + str(self.outputs)
+
+
+class Rule:
+    """
+    Rule to match profile to xrandr connections
+    """
+    def __init__(self, edid: str=None, mode: str=None):
+        """
+        param edid: edid of a display to match
+        param mode: supported mode of a display to match
+        """
+        self.edid = edid
+        self.mode = mode
+
+    def __eq__(self, other):
+        return isinstance(other, Rule) and self.edid == other.edid and self.mode == other.mode
+
+    def score(self, xrandr_output):
+        """
+        TODO doc
+        1 if match is not needed by a criterion (i.e. edid is not set, mode is not set)
+        2 if matches by supported mode
+        3 if matches by edid
+        returns sum of scores, -1 if doesn't match
+        """
+
+        score = 0
+        if self.edid:
+            if self.edid == xrandr_output.edid:
+                score += 2
+            else:
+                return -1
+
+        if self.mode:
+            if xrandr_output.supported_modes.count(self.mode) > 0:
+                score += 1
+            else:
+                return -1
+        return score
 
 
 class Geometry:
@@ -107,6 +135,12 @@ class ProfileManager:
 
             rules = result.get('match')
 
+            if rules:
+                for k, v in rules.items():
+                    rules[k] = Rule(**v)
+            else:
+                rules = {}
+
             primary = result['primary']
             outputs_raw = result['outputs']
             outputs = []
@@ -164,12 +198,42 @@ class ProfileManager:
 
 
 class ProfileMatcher:
-    def findFirst(self, availableProfiles, actualConnections):
+
+    def find_best(self, availableProfiles, xrandr_outputs):
         """
         Find first matching profile across availableProfiles for actualConnections
         """
-        for p in availableProfiles:
-            if p.matches(actualConnections):
-                logger.info("Found matching profile {0}", p.name)
-                return p
-        return None
+        output_names = map(lambda o: o.name, xrandr_outputs)
+        output_names_set = set(output_names)
+
+        # remove those with different outputs set
+        profiles = filter(lambda p: set(p.rules) == output_names_set, availableProfiles)
+        profiles = list(profiles)
+
+        if len(profiles) == 0:
+            return None
+
+        matching = []
+        for p in profiles:
+            score = 0
+            logger.debug("Trying profile %s", p.name)
+            for o in xrandr_outputs:
+                rule = p.rules.get(o.name)
+                s = rule.score(o)
+                logger.debug("%s scored %d for output %s", p.name, s, o.name)
+                if s >= 0:
+                    score += s
+                else:
+                    logger.debug("%s doesn't match %s", p.name, o.name)
+                    score = -1
+                    break
+            logger.debug("%s total score: %d", p.name, s)
+            if score >= 0:
+                matching.append((score, p))
+
+        if len(matching) > 0:
+            (s, p) = max(matching)
+            logger.debug("Selected profile %s with score %d", p.name, s)
+            return p
+        else:
+            return None

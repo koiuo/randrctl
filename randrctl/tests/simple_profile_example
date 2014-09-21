@@ -1,0 +1,8 @@
+{
+    "outputs": {
+        "LVDS1": {
+            "mode": "1366x768"
+        }
+    },
+    "primary": "LVDS1"
+}

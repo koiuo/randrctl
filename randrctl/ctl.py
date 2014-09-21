@@ -4,7 +4,6 @@ import logging
 import subprocess
 import sys
 
-from randrctl.hotplug import SysfsDevice
 from randrctl.profile import ProfileManager, ProfileMatcher, Profile
 from randrctl.xrandr import Xrandr
 
@@ -30,26 +29,26 @@ class RandrCtl:
         p = self.profile_manager.read_one(profile_name)
         self.xrandr.apply(p)
 
-    def switch_by_edid(self, sysfsroot, devpath):
+    def switch_auto(self):
         """
         Try to find profile by display EDID and apply it
         """
-        device = SysfsDevice(sysfsroot, devpath)
-        connections = device.get_active_connections()
-
         profiles = self.profile_manager.read_all()
+        xrandr_outputs = self.xrandr.get_connected_outputs()
 
         profileMatcher = ProfileMatcher()
-        matching = profileMatcher.findFirst(profiles, connections)
+        matching = profileMatcher.find_best(profiles, xrandr_outputs)
 
         if matching is not None:
             self.xrandr.apply(matching)
+        else:
+            logger.warn("No matching profile found")
 
     def dump_current(self, name: str, to_file: bool=False):
         """
         Dump current profile under specified name. Only xrandr settings are dumped
         """
-        xrandr_connections = self.xrandr.get_all_connections()
+        xrandr_connections = self.xrandr.get_all_outputs()
         profile = self.profile_manager.profile_from_xrandr(xrandr_connections, name)
 
         if to_file:

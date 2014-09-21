@@ -2,7 +2,8 @@
     "match": {
         "LVDS1" : { },
         "DP1" : {
-            "edid": "base64encoded"
+            "edid": "d8578edf8458ce06fbc5bb76a58c5ca4",
+            "mode": "1920x1080"
         }
     },
     "outputs": {

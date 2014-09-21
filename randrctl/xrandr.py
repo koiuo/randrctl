@@ -33,6 +33,7 @@ class Xrandr:
     PANNING_KEY = "--panning"
     PRIMARY_KEY = "--primary"
     QUERY_KEY = "-q"
+    VERBOSE_KEY = "--verbose"
     OFF_KEY = "--off"
     OUTPUT_DETAILS_REGEX = re.compile('(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*$')
     MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
@@ -43,7 +44,7 @@ class Xrandr:
         """
         logger.debug("Applying profile %s", profile.name)
 
-        args = self.__compose_mode_args__(profile, self.get_all_connections())
+        args = self.__compose_mode_args__(profile, self.get_all_outputs())
         self.__xrandr__(args)
 
     def __xrandr__(self, args: list):
@@ -95,12 +96,13 @@ class Xrandr:
 
         return args
 
-    def get_all_connections(self):
+    def get_all_outputs(self):
         """
-        Query xrandr for all supported connections.
+        Query xrandr for all supported outputs.
         Performs call to xrandr with -q key and parses output.
+        Returns list of outputs with some properties missing (only name and status are guaranteed)
         """
-        connections = []
+        outputs = []
 
         p = self.__xrandr__([self.QUERY_KEY])
         query_result = p.stdout.readlines()
@@ -109,9 +111,57 @@ class Xrandr:
         items = self.group_query_result(map(lambda x: x.decode(), query_result))
 
         for i in items:
-            c = self.output_from_query_item(i)
-            connections.append(c)
-        return connections
+            o = self.output_from_query_item(i)
+            outputs.append(o)
+        return outputs
+
+    def get_connected_outputs(self):
+        """
+        Query xrandr and return list of connected outputs.
+        Performs call to xrandr with -q and --verbose keys.
+        Returns list of connected outputs with all properties set
+        """
+        outputs = list(filter(lambda o: o.connected, self.get_all_outputs()))
+        edids = self.get_edids()
+        for o in outputs:
+            o.edid = edids[o.name]
+
+        return outputs
+
+    def get_edids(self):
+        """
+        Get EDIDs of all connected displays.
+        Return dictionary of {"connection_name": "edid"}
+        """
+        edids = dict()
+
+        p = self.__xrandr__([self.QUERY_KEY, self.VERBOSE_KEY])
+        query_result = p.stdout.readlines()
+        query_result.pop(0)  # remove first line
+
+        items = self.group_query_result(map(lambda x: x.decode(), query_result))
+
+        items = filter(lambda x: x[0].find(' connected') > 0, items)
+
+        for i in items:
+            name_idx = i[0].find(' ')
+            name = i[0][:name_idx]
+            edids[name] = self.edid_from_query_item(i)
+
+        return edids
+
+    def edid_from_query_item(self, item_lines: list):
+        """
+        Extracts display EDID from xrandr --verbose output
+        """
+        edid_start = 0
+        for i, line in enumerate(item_lines):
+            if line.find('EDID:') >= 0:
+                edid_start = i + 1
+                break
+        edid_lines = map(lambda x: x.strip(), item_lines[edid_start:edid_start + 8])
+        edid = ''.join(edid_lines)
+        return edid
 
     def output_from_query_item(self, item_lines: list):
         """
@@ -171,12 +221,12 @@ class Xrandr:
     def group_query_result(self, query_result: list):
         def group_fn(x, y):
             if type(x) is str:
-                if y.startswith(' '):
+                if y.startswith(' ') or y.startswith('\t'):
                     return [[x, y]]
                 else:
                     return [[x], [y]]
             else:
-                if y.startswith(' '):
+                if y.startswith(' ') or y.startswith('\t'):
                     last = x[len(x) - 1]
                     last.append(y)
                     return x
@@ -224,13 +274,14 @@ class Xrandr:
 
 class XrandrOutput:
     def __init__(self, name: str, connected: bool=False, current_geometry: Geometry=None, primary: bool=False,
-                 supported_modes: list=None, preferred_mode=None):
+                 supported_modes: list=None, preferred_mode=None, edid: str=None):
         self.name = name
         self.connected = connected
         self.current_geometry = current_geometry
         self.primary = primary
         self.supported_modes = supported_modes
         self.preferred_mode = preferred_mode
+        self.edid = edid
 
     def is_active(self):
         return self.current_geometry is not None
