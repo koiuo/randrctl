@@ -13,6 +13,7 @@ __author__ = 'edio'
 logger = logging.getLogger('randrctl')
 
 DUMP = 'dump'
+AUTO = 'auto'
 LIST = 'list'
 SWITCH_TO = 'switch-to'
 SHOW = 'show'
@@ -60,10 +61,14 @@ class Main:
         command_list.add_argument('-l', action='store_const', const=True, default=False,
                                   help='long listing', dest='long_listing')
 
-        #dump
+        # dump
         command_dump = commands_parsers.add_parser(DUMP,
                                                    help='dump current screen setup')
         command_dump.add_argument('profile_name', help='name of the profile to dump setup to')
+
+        # auto
+        command_dump = commands_parsers.add_parser(AUTO,
+                                                   help='automatically switch to the best matching profile')
 
         args = parser.parse_args(sys.argv[1:])
 
@@ -99,7 +104,8 @@ class Main:
                 SWITCH_TO: self.switch_to,
                 LIST: self.list,
                 SHOW: self.show,
-                DUMP: self.dump
+                DUMP: self.dump,
+                AUTO: self.auto
             }[args.command](args)
         except RandrCtlException as e:
             logger.error(e)
@@ -123,6 +129,9 @@ class Main:
     def dump(self, args: argparse.Namespace):
         name = args.profile_name
         self.randrctl.dump_current(name=name, to_file=True)
+
+    def auto(self, args: argparse.Namespace):
+        self.randrctl.switch_auto()
 
 
 if __name__ == '__main__':

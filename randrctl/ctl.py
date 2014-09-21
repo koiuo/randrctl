@@ -108,7 +108,7 @@ class Hook:
         return xrandr
 
     def hook(self, hook: str, p: Profile, err: str=None):
-        if hook is not None:
+        if hook is not None and len(hook.strip()) > 0:
             try:
                 env = os.environ.copy()
                 env["randr_profile"] = p.name

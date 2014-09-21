@@ -125,7 +125,7 @@ class Xrandr:
         edids = self.get_edids()
         for o in outputs:
             o.edid = edids[o.name]
-
+        logger.debug("Connected outputs: %s", outputs)
         return outputs
 
     def get_edids(self):

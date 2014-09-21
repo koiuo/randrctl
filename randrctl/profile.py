@@ -210,6 +210,8 @@ class ProfileMatcher:
         profiles = filter(lambda p: set(p.rules) == output_names_set, availableProfiles)
         profiles = list(profiles)
 
+        logger.debug("%d/%d profiles match outputs sets", len(profiles), len(availableProfiles))
+
         if len(profiles) == 0:
             return None
 
