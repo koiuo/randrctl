@@ -1,6 +1,5 @@
 import logging
 from randrctl.exception import InvalidProfileException
-from randrctl.hotplug import Connection
 import os
 import json
 
@@ -15,17 +14,17 @@ class Profile:
         self.outputs = outputs
         self.rules = rules
 
-    def matches(self, *connections: Connection):
-        for connection in connections:
-            rule = self.rules.get(connection.output)
-            if not rule:
-                logger.debug("Not matched by output name {0}", connection.output)
-                return False
-            for key, value in rule:
-                if getattr(connection, key) != value:
-                    logger.debug("Output {0} has unmatched property {1}", connection.output, key)
-                    return False
-        return True
+    # def matches(self, *connections: Connection):
+    #     for connection in connections:
+    #         rule = self.rules.get(connection.output)
+    #         if not rule:
+    #             logger.debug("Not matched by output name {0}", connection.output)
+    #             return False
+    #         for key, value in rule:
+    #             if getattr(connection, key) != value:
+    #                 logger.debug("Output {0} has unmatched property {1}", connection.output, key)
+    #                 return False
+    #     return True
 
     def __repr__(self):
         return self.name + str(self.outputs)

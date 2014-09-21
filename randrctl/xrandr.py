@@ -57,6 +57,9 @@ class Xrandr:
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
         err = p.stderr.readlines()
         if err:
+            # close descriptors
+            p.stderr.close()
+            p.stdout.close()
             err_str = ''.join(map(lambda x: x.decode(), err)).strip()
             raise XrandrException(err_str, args)
         return p
