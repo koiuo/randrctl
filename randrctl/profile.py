@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from randrctl.exception import InvalidProfileException
 import os
@@ -7,6 +8,13 @@ from randrctl.model import Profile, Rule, Geometry, Output, XrandrOutput
 
 __author__ = 'edio'
 logger = logging.getLogger(__name__)
+
+
+def md5(string: str):
+    if string:
+        return hashlib.md5(string.encode()).hexdigest()
+    else:
+        return None
 
 
 class ProfileManager:
@@ -107,7 +115,7 @@ class ProfileManager:
                 continue
             output = Output(c.name, c.current_geometry, c.primary)
             outputs.append(output)
-            rule = Rule(c.edid, c.current_geometry.mode)
+            rule = Rule(md5(c.edid), c.current_geometry.mode)
             rules[c.name] = rule
 
         logger.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
@@ -176,7 +184,7 @@ class ProfileMatcher:
         """
         score = 0
         if rule.edid:
-            if rule.edid == xrandr_output.edid:
+            if rule.edid == md5(xrandr_output.edid):
                 score += 2
             else:
                 return -1

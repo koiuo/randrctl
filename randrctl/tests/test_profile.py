@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 from unittest import TestCase
@@ -65,6 +66,9 @@ class Test_ProfileMatcher(TestCase):
 
     matcher = ProfileMatcher()
 
+    HOME_MD5 = hashlib.md5("home".encode()).hexdigest()
+    OFFICE_MD5 = hashlib.md5("office".encode()).hexdigest()
+
     profiles = [
         Profile("default", [
             Output("LVDS1", Geometry("1366x768"))
@@ -76,12 +80,12 @@ class Test_ProfileMatcher(TestCase):
         Profile("home", [
             Output("LVDS1", Geometry("1366x768")),
             Output("DP1", Geometry("1920x1080"))
-        ], {"LVDS1": Rule(), "DP1": Rule("homeedid")}),
+        ], {"LVDS1": Rule(), "DP1": Rule(HOME_MD5)}),
         Profile("no_rule", [Output("LVDS1", Geometry("800x600"))]),
         Profile("office", [
             Output("LVDS1", Geometry("1366x768")),
             Output("HDMI1", Geometry("1920x1080"))
-        ], {"LVDS1": Rule(), "HDMI1": Rule("officeedid")})
+        ], {"LVDS1": Rule(), "HDMI1": Rule(OFFICE_MD5)})
     ]
 
     def test_find_best_default(self):
@@ -102,7 +106,7 @@ class Test_ProfileMatcher(TestCase):
     def test_find_best_edid_over_mode(self):
         outputs = [
             XrandrOutput("LVDS1", True),
-            XrandrOutput("DP1", True, supported_modes=["1920x1080"], edid="homeedid")
+            XrandrOutput("DP1", True, supported_modes=["1920x1080"], edid="home")
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[2], best)
@@ -110,7 +114,7 @@ class Test_ProfileMatcher(TestCase):
     def test_find_best_mode(self):
         outputs = [
             XrandrOutput("LVDS1", True),
-            XrandrOutput("DP1", True, supported_modes=["1920x1080"], edid="officeedid")
+            XrandrOutput("DP1", True, supported_modes=["1920x1080"], edid="office")
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[1], best)
