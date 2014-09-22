@@ -8,7 +8,7 @@ Tool may be usefull to people who work on the same laptop at home, in the office
 Currently randrctl can
 * handle *mode*, *position*, *rotation* and *panning*
 * dump current screen setup to a profile
-* switch between stored profiles
+* automatically (via udev) or manually switch between stored profiles
 * list all available profiles and show profile details
 * run custom commands before/after the switch or when it fails for some reason
 
@@ -21,15 +21,147 @@ Usage is very simple:
 2. After this you can reapply these settings whenever you need them
 
   ```randrctl switch-to home```
+
+3. ... or let randrctl to guess your settings automatically
+
+  ```randrctl auto```
   
-3. You can list all available profiles
+4. You can list all available profiles
 
   ```randrctl list```
   
-4. And if you are interested in some particular profile
+5. And if you are interested in some particular profile
 
   ```randrctl show home```
-  
+
+
+Profile format
+--------------
+
+Simple text file in JSON format, can be edited manually. All values are case-sensitive, white-spaces don't matter.
+
+```
+{
+  "match": {
+    "LVDS1": {},
+    "DP1": {
+        "mode": "1920x1080"
+    }
+  },
+  "outputs": {
+    "LVDS1": {
+      "mode": "1366x768",
+      "panning": "1366x1080
+    },
+    "DP1": {
+      "mode": "1920x1080",
+      "pos": "1366x0",
+      "rotate": "inverted"
+    }
+  },
+  "primary": "DP1"
+}
+```
+
+Profile should contain 2 sections (```outputs``` and ```primary```) for manual switching. ```match``` section is optional and is used for auto-switching.
+
+
+### Outputs
+
+Each property of ```output``` section references output as seen in xrandr (i.e. ```DP1```, ```HDMI2```, etc.). Each output must contain ```mode``` property. Here is a list of output properties:
+
+* ```mode```
+  output resolution. Xrandr equivalent: ```--mode```. Value example: *"1920x1080"*
+
+* ```pos```
+  output position. Xrandr equivalent: ```--pos```. Value example: *"312x0"*
+
+* ```panning```
+  output panning (it's fun http://crunchbang.org/forums/viewtopic.php?id=20634). Xrandr equivalent: ```--panning```. Value example: *"1366x1080"*
+
+* ```rotate```
+  output rotation. Xrandr equivalent: ```--rotate```. Possible values: *"normal"*, *"left"*, *"right"*, *"inverted"*
+
+
+### Primary
+
+Just name of the primary output.
+
+
+### Match
+
+See [matching](matching) section.
+
+
+Profile matching<a name="matching"></a>
+---------------------------------------
+
+```randrctl``` is able to associate profiles with your hardware configuration. To do so, ```match``` section should be delcared in profile. As in ```outputs``` section, properties of this section are names of outputs to match.
+
+Profile is considered for matching if and only if all stated outputs are currently connected.
+
+Example:
+
+```
+"match": {
+  "LVDS1": {},
+  "DP1": {}
+}
+```
+This profile will be considered if *DP1* and *LVDS1* are connected. It won't be if *HDMI1* is additionally connected at the same time.
+
+Also each stated output can be matched by supported ```mode``` or by connected display ```edid```.
+
+```mode``` matches display if it supports specified mode.
+
+Example:
+
+```
+"match": {
+  "DP1": {
+    "mode": "1920x1080"
+  }
+}
+```
+will match any display on *DP1* port that supports *1920x1080* resolution. This, for example, may be very useful if you want to create profile that is activated whenever full-HD display is connected to *HDMI* port of your laptop:
+
+```
+{
+  "match": {
+    "LVDS1": {},
+    "HDMI1": {
+      "mode": "1920x1080"
+    }
+  },
+  "outputs": {
+    "LVDS1": {
+      ...
+    },
+    "HDMI1": {
+      ...
+    }
+  }
+}
+```
+
+```edid``` matching will look for specific display identified by edid.
+
+Example:
+
+```
+"match": {
+  "DP1": {
+    "edid": "d8578edf8458ce06fbc5bb76a58c5ca4",
+  }
+}
+```
+will match display whichs EDID md5-sum is equal to the specified one (to generate profile with proper edid value use ```randrctl dump```)
+
+
+### Order of matching
+
+The most specific profile is chosen among all that matched. Naturally, *edid* is more specific than supported *mode*.
+
 
 Prior/Post hooks
 ------------------
@@ -51,35 +183,15 @@ post_switch = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u low "randr
 post_fail = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u critical "randrctl error" "$randr_error"
 ```
 
-Profile format
---------------
-
-Simple text file in JSON format, can be edited manually.
-
-```
-{
-  "outputs": {
-    "LVDS1": {
-      "mode": "1366x768",
-      "panning": "1366x1080
-    },
-    "DP1": {
-      "mode": "1920x1080",
-      "pos": "1366x0",
-      "rotate": "inverted"
-    }
-  },
-  "primary": "DP1"
-}  
-```
-
 
 Upcoming features
 -----------------
 
-* detecting connected display and choosing the most appropriate profile (only opensource linux drivers allow this). There is a prototype already
+* ~~detecting connected display and choosing the most appropriate profile (only opensource linux drivers allow this). There is a prototype already~~
 * ~~completion functions for popular shells~~
-* per-user profiles and configuration (no need for su/sudo)
+* ~~per-user profiles and configuration (no need for su/sudo)~~
+
+Open an issue here on github if you want something.
 
 Installation
 ------------
@@ -92,10 +204,11 @@ There is AUR package https://aur.archlinux.org/packages/randrctl-git/
 ```
 $ git clone https://github.com/edio/randrctl.git
 $ cd randrctl
+$ cp -r etc/randrctl ~/.config
 # python setup.py install
-# cp -r etc/randrctl /etc
-# cp etc/randrctl/completion/randrctl.zsh /usr/share/zsh/site-functions/_randrctl
-# cp etc/randrctl/completion/randrctl.bash /usr/share/bash-completion/completions/randrctl
+# cp etc/completion/randrctl.zsh /usr/share/zsh/site-functions/_randrctl
+# cp etc/completion/randrctl.bash /usr/share/bash-completion/completions/randrctl
+# cp etc/udev/rules.d/*.rules /etc/udev/rules.d/
 ```
 
 Feedback/contribution
