@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+# This script is used to determine DISPLAY and a user who currently holds active X session
+# Idea and implementation is borrowed from https://github.com/wertarbyte/autorandr/
+
+for X in /tmp/.X11-unix/X*; do
+    D="${X##/tmp/.X11-unix/X}"
+    # `who` echoes display info as DISPLAY.SCREEN
+    user=$( who | grep \(:$D[.0-9]*\) | cut -d ' ' -sf 1 | uniq )
+    if [ x"$user" != x"" ]; then
+        export DISPLAY=":$D"
+        /bin/su -c "/usr/bin/randrctl auto" "$user"
+    fi
+done
