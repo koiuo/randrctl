@@ -63,24 +63,24 @@ Simple text file in JSON format, can be edited manually. All values are case-sen
 }
 ```
 
-Profile should contain 2 sections (```outputs``` and ```primary```) for manual switching. ```match``` section is optional and is used for auto-switching.
+Profile should contain 2 sections (*outputs* and *primary* for manual switching. *match* section is optional and is used for auto-switching.
 
 
 ### Outputs
 
-Each property of ```output``` section references output as seen in xrandr (i.e. ```DP1```, ```HDMI2```, etc.). Each output must contain ```mode``` property. Here is a list of output properties:
+Each property of *output* section references output as seen in xrandr (i.e. *DP1* *HDMI2* etc.). Each output must contain *mode* property. Here is a list of output properties:
 
-* ```mode```
-  output resolution. Xrandr equivalent: ```--mode```. Value example: *"1920x1080"*
+* *mode*
+  output resolution. Xrandr equivalent: *--mode* Value example: *"1920x1080"*
 
-* ```pos```
-  output position. Xrandr equivalent: ```--pos```. Value example: *"312x0"*
+* *pos*
+  output position. Xrandr equivalent: *--pos* Value example: *"312x0"*
 
-* ```panning```
-  output panning (it's fun http://crunchbang.org/forums/viewtopic.php?id=20634). Xrandr equivalent: ```--panning```. Value example: *"1366x1080"*
+* *panning*
+  output panning (it's fun http://crunchbang.org/forums/viewtopic.php?id=20634). Xrandr equivalent: *--panning*. Value example: *"1366x1080"*
 
-* ```rotate```
-  output rotation. Xrandr equivalent: ```--rotate```. Possible values: *"normal"*, *"left"*, *"right"*, *"inverted"*
+* *rotate*
+  output rotation. Xrandr equivalent: *--rotate* Possible values: *"normal"*, *"left"*, *"right"*, *"inverted"*
 
 
 ### Primary
