@@ -63,20 +63,20 @@ Simple text file in JSON format, can be edited manually. All values are case-sen
 }
 ```
 
-Profile should contain 2 sections (*outputs* and *primary* for manual switching. *match* section is optional and is used for auto-switching.
+Profile should contain 2 sections (```outputs``` and ```primary```) for manual switching. The ```match``` section is optional and is used for auto-switching.
 
 
 ### Outputs
 
-Each property of *output* section references output as seen in xrandr (i.e. *DP1* *HDMI2* etc.). Each output must contain *mode* property. Here is a list of output properties:
+Each property of ```outputs``` section references output as seen in xrandr (i.e. *DP1*, *HDMI2*, etc.). Each output must contain ```mode``` property. Here is a list of output properties:
 
-* *mode* — output resolution. Value example: *"1920x1080"*
+* ```mode``` — output resolution. Value example: *"1920x1080"*
 
-* *pos* — output position. Value example: *"312x0"*
+* ```pos``` — output position. Value example: *"312x0"*
 
-* *panning* — output panning (it's fun http://crunchbang.org/forums/viewtopic.php?id=20634). Value example: *"1366x1080"*
+* ```panning``` — output panning (it's fun http://crunchbang.org/forums/viewtopic.php?id=20634). Value example: *"1366x1080"*
 
-* *rotate* — output rotation. Possible values: *"normal"*, *"left"*, *"right"*, *"inverted"*
+* ```rotate``` — output rotation. Possible values: *"normal"*, *"left"*, *"right"*, *"inverted"*
 
 
 ### Primary
@@ -86,13 +86,13 @@ Just name of the primary output.
 
 ### Match
 
-See [matching](matching) section.
+See [auto-switching](auto) section.
 
 
-Profile matching<a name="matching"></a>
+Auto-switching<a name="auto"></a>
 ---------------------------------------
 
-```randrctl``` is able to associate profiles with your hardware configuration. To do so, ```match``` section should be delcared in profile. As in ```outputs``` section, properties of this section are names of outputs to match.
+```randrctl``` is able to associate profiles with your hardware configuration and switch between them automatically. To do so, ```match``` section should be declared in profile. As in ```outputs``` section, properties of this section are names of outputs to match.
 
 Profile is considered for matching if and only if all stated outputs are currently connected.
 
