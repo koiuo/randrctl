@@ -65,9 +65,9 @@ class Main:
         command_dump = commands_parsers.add_parser(DUMP,
                                                    help='dump current screen setup')
         command_dump.add_argument('-m', action='store_const', const=True, default=False,
-                                  help='include "mode" rule into match section', dest='match_mode')
+                                  help='dump with match by supported mode', dest='match_mode')
         command_dump.add_argument('-e', action='store_const', const=True, default=False,
-                                  help='include "edid" rule into match section', dest='match_edid')
+                                  help='dump with match by edid', dest='match_edid')
         command_dump.add_argument('profile_name', help='name of the profile to dump setup to')
 
         # auto

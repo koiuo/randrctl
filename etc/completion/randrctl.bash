@@ -23,6 +23,7 @@ _randrctl()
           ;;
           list)
             COMPREPLY=( $(compgen -W "-l" -- "$cur") )
+          ;;
         esac
       ;;
     esac

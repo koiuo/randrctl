@@ -5,6 +5,12 @@ _randrctl_show() {
 }
 
 _randrctl_dump() {
+    local -a _arguments
+    _arguments=(
+        '-m:dump with match by supported mode'
+        '-e:dump with match by edid'
+    )
+    _describe "list arguments" _arguments
     compadd $(_randrctl_profiles)
 }
 
@@ -12,12 +18,15 @@ _randrctl_switch-to() {
     compadd $(_randrctl_profiles)
 }
 
+_randrctl_auto() {
+    _message "no more arguments"
+}
+
 _randrctl_list() {
     local -a _arguments
     _arguments=(
         '-l:use long listing'
     )
-    # TODO only one instance
     if (( CURRENT == 2 )); then
         _describe "list arguments" _arguments
     else
