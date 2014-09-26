@@ -35,10 +35,11 @@ _randrctl_profiles() {
 _randrctl_command() {
     local -a _randrctl_cmds
     _randrctl_cmds=(
-        'dump:Show current locale settings'
-        'list:Set system locale'
-        'show:Show known locales'
-        'switch-to:Set virtual console keyboard mapping'
+        'dump:dump profile'
+        'list:list available profiles'
+        'show:show profile details'
+        'switch-to:switch to profile'
+        'auto:guess the best matching profile'
     )
     if (( CURRENT == 1 )); then
         _describe -t commands 'randrctl command' _randrctl_cmds
@@ -55,10 +56,10 @@ _randrctl_command() {
 }
 
 _arguments \
-    {-h,--help}'[Show this help]' \
-    {-v,--version}'[Show package version]' \
-    "-x[Don't convert keyboard mappings]" \
-    '-X[Do not pipe output into a pager]' \
-    '--system[Do not prompt for password]' \
+    {-h,--help}'[show help message]' \
+    {-v,--version}'[print version information]' \
+    "-x[be verbose]" \
+    '-X[be even more verbose]' \
+    '--system[work in system mode]' \
     '*::randrctl commands:_randrctl_command'
 

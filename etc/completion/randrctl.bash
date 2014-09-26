@@ -14,7 +14,7 @@ _randrctl()
 
     case $COMP_CWORD in
       1)
-        COMPREPLY=( $(compgen -W "--help --version --sys list dump show switch-to" -- "$cur") )
+        COMPREPLY=( $(compgen -W "--help --version --system -x -X list dump show switch-to auto" -- "$cur") )
       ;;
       2)
         case ${COMP_WORDS[COMP_CWORD-1]} in
