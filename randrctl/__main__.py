@@ -64,10 +64,14 @@ class Main:
         # dump
         command_dump = commands_parsers.add_parser(DUMP,
                                                    help='dump current screen setup')
+        command_dump.add_argument('-m', action='store_const', const=True, default=False,
+                                  help='include "mode" rule into match section', dest='match_mode')
+        command_dump.add_argument('-e', action='store_const', const=True, default=False,
+                                  help='include "edid" rule into match section', dest='match_edid')
         command_dump.add_argument('profile_name', help='name of the profile to dump setup to')
 
         # auto
-        command_dump = commands_parsers.add_parser(AUTO,
+        command_auto = commands_parsers.add_parser(AUTO,
                                                    help='automatically switch to the best matching profile')
 
         args = parser.parse_args(sys.argv[1:])
@@ -128,7 +132,8 @@ class Main:
 
     def dump(self, args: argparse.Namespace):
         name = args.profile_name
-        self.randrctl.dump_current(name=name, to_file=True)
+        self.randrctl.dump_current(name=name, to_file=True, include_mode_rule=args.match_mode,
+                                   include_edid_rule=args.match_edid)
 
     def auto(self, args: argparse.Namespace):
         self.randrctl.switch_auto()

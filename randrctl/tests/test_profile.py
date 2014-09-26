@@ -59,6 +59,36 @@ class Test_ProfileManager(TestCase):
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
                                       'panning': "800x1080"}}}, d)
 
+    def test_to_dict_no_rules(self):
+        with open(self.TEST_PROFILE_FILE) as f:
+            p = self.manager.read_file(f)
+            p.rules = None
+
+            d = self.manager.to_dict(p)
+            self.maxDiff = None
+            self.assertDictEqual(
+                {'primary': 'LVDS1',
+                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
+                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
+                             'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
+                                      'panning': "800x1080"}}}, d)
+
+    def test_to_dict_no_edid_rule(self):
+        with open(self.TEST_PROFILE_FILE) as f:
+            p = self.manager.read_file(f)
+            p.rules['DP1'].edid = None
+
+            d = self.manager.to_dict(p)
+            self.maxDiff = None
+            self.assertDictEqual(
+                {'primary': 'LVDS1',
+                 'match': {'LVDS1': {},
+                           'DP1': {'mode': "1920x1080"}},
+                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
+                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
+                             'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
+                                      'panning': "800x1080"}}}, d)
+
 
 class Test_ProfileMatcher(TestCase):
 

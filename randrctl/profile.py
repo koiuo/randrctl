@@ -41,6 +41,7 @@ class ProfileManager:
         return profiles
 
     def read_one(self, profile_name: str):
+        # TODO handle missing profile
         for profile_dir in self.profile_dirs:
             profile_path = os.path.join(profile_dir, profile_name)
             if not os.path.isfile(profile_path):
@@ -94,17 +95,20 @@ class ProfileManager:
 
     def to_dict(self, p: Profile):
         outputs = {}
-        rules = {}
         primary = None
         for o in p.outputs:
             outputs[o.name] = o.geometry.__dict__
             if o.primary:
                 primary = o.name
 
-        for o, r in p.rules.items():
-            rules[o] = dict((k, v) for k, v in r.__dict__.items() if v is not None)
+        result = {'outputs': outputs, 'primary': primary}
 
-        result = {'outputs': outputs, 'primary': primary, 'match': rules}
+        if p.rules:
+            rules = {}
+            for o, r in p.rules.items():
+                rules[o] = dict((k, v) for k, v in r.__dict__.items() if v is not None)
+            result['match'] = rules
+
         return result
 
     def profile_from_xrandr(self, xrandr_connections: list, name: str='profile'):

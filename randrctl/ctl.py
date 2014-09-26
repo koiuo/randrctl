@@ -45,12 +45,22 @@ class RandrCtl:
         else:
             logger.warn("No matching profile found")
 
-    def dump_current(self, name: str, to_file: bool=False):
+    def dump_current(self, name: str, to_file: bool=False, include_mode_rule: bool=True, include_edid_rule: bool=True):
         """
         Dump current profile under specified name. Only xrandr settings are dumped
         """
         xrandr_connections = self.xrandr.get_connected_outputs()
         profile = self.profile_manager.profile_from_xrandr(xrandr_connections, name)
+
+        # TODO move logic to manager
+        if not (include_edid_rule or include_mode_rule):
+            profile.rules = None
+        else:
+            for output, rule in profile.rules.items():
+                if not include_mode_rule:
+                    rule.mode = None
+                if not include_edid_rule:
+                    rule.edid = None
 
         if to_file:
             self.profile_manager.write(profile)
