@@ -1,6 +1,6 @@
 import hashlib
 import logging
-from randrctl.exception import InvalidProfileException
+from randrctl.exception import InvalidProfileException, NoSuchProfileException
 import os
 import json
 from randrctl.model import Profile, Rule, Geometry, Output, XrandrOutput
@@ -42,12 +42,19 @@ class ProfileManager:
 
     def read_one(self, profile_name: str):
         # TODO handle missing profile
+        profile = None
         for profile_dir in self.profile_dirs:
             profile_path = os.path.join(profile_dir, profile_name)
             if not os.path.isfile(profile_path):
                 continue
             with open(profile_path) as profile_file:
-                return self.read_file(profile_file)
+                profile = self.read_file(profile_file)
+                break
+
+        if profile:
+            return profile
+        else:
+            raise NoSuchProfileException(profile_name, self.profile_dirs)
 
     def read_file(self, profile_file_descriptor):
         try:

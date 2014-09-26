@@ -22,6 +22,16 @@ class InvalidProfileException(RandrCtlException):
         Exception.__init__(self, "Invalid profile {}".format(profile_path))
 
 
+class NoSuchProfileException(RandrCtlException):
+    """
+    Thrown when profile is referred by name, but no such exist
+    """
+    def __init__(self, name: str, search_locations: list):
+        self.name = name
+        self.search_locations = search_locations
+        Exception.__init__(self, "No profile '{}' found under {}".format(self.name, self.search_locations))
+
+
 class XrandrException(RandrCtlException):
     """
     is thrown when call to xrandr fails
