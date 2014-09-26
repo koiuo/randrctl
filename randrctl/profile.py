@@ -102,7 +102,7 @@ class ProfileManager:
                 primary = o.name
 
         for o, r in p.rules.items():
-            rules[o] = r.__dict__
+            rules[o] = dict((k, v) for k, v in r.__dict__.items() if v is not None)
 
         result = {'outputs': outputs, 'primary': primary, 'match': rules}
         return result

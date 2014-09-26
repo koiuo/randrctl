@@ -52,7 +52,7 @@ class Test_ProfileManager(TestCase):
             self.maxDiff = None
             self.assertDictEqual(
                 {'primary': 'LVDS1',
-                 'match': {'LVDS1': {'edid': None, 'mode': None},
+                 'match': {'LVDS1': {},
                            'DP1': {'edid': "d8578edf8458ce06fbc5bb76a58c5ca4", 'mode': "1920x1080"}},
                  'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
                              'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
