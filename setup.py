@@ -14,5 +14,5 @@ setup(
     author_email='edio@archlinux.us',
     description='Profile based screen manager for X',
     packages=['randrctl'],
-    scripts=['bin/randrctl', 'bin/randrctl-auto]
+    scripts=['bin/randrctl', 'bin/randrctl-auto']
 )
