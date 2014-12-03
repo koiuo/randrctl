@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 from unittest import TestCase
+from randrctl import profile
 from randrctl.model import Profile, Rule, Geometry, Output, XrandrOutput
 from randrctl.profile import ProfileManager, ProfileMatcher
 
@@ -148,3 +149,26 @@ class Test_ProfileMatcher(TestCase):
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[1], best)
+
+    def test_find_best_ambiguous(self):
+        """
+        Test matching for similarly scored profiles
+        """
+        edid = "office"
+        edidhash = profile.md5(edid)
+
+        connected_outputs = [
+            XrandrOutput("LVDS1", True),
+            XrandrOutput("DP1", True, supported_modes=["1920x1080"], edid=edid)
+        ]
+
+        profile_outputs = [
+            Output("LVDS1", Geometry('1366x768'), True),
+            Output("DP1", Geometry('1920x1080'))
+        ]
+
+        p1 = Profile("p1", profile_outputs, {"LVDS1": Rule(), "DP1": Rule(edidhash)})
+        p2 = Profile("p2", profile_outputs, {"LVDS1": Rule(), "DP1": Rule(edidhash)})
+
+        best = self.matcher.find_best([p1, p2], connected_outputs)
+        self.assertEqual(p1, best)

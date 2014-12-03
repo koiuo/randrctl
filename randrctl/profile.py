@@ -159,7 +159,8 @@ class ProfileMatcher:
                 matching.append((score, p))
 
         if len(matching) > 0:
-            (s, p) = max(matching)
+            # profiles are unorderable, so we only consider score
+            (s, p) = max(matching, key=lambda t: t[0])
             logger.debug("Selected profile %s with score %d", p.name, s)
             return p
         else:

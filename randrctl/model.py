@@ -3,6 +3,13 @@ __author__ = 'edio'
 
 class Profile:
     def __init__(self, name, outputs: list, rules: dict={}):
+        """
+        :param name: name of the profile
+        :param outputs: list of Output objects (i.e. settings to apply for each output)
+        :param rules: dictionary of rules for match section. Keys of the dictionary are outputs names (e.g. "LVDS1"),
+        values are Rule instances
+        """
+
         self.name = name
         self.outputs = outputs
         self.rules = rules
@@ -17,8 +24,9 @@ class Rule:
     """
     def __init__(self, edid: str=None, mode: str=None):
         """
-        param edid: edid of a display to match
-        param mode: supported mode of a display to match
+        Rule to match against edid, mode or both. Rule matches anything if nothing is passed
+        :param edid: edid of a display to match
+        :param mode: supported mode of a display to match
         """
         self.edid = edid
         self.mode = mode
