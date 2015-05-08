@@ -36,11 +36,12 @@ class Rule:
 
 
 class Geometry:
-    def __init__(self, mode: str, pos: str='0x0', rotate: str='normal', panning: str='0x0'):
+    def __init__(self, mode: str, pos: str='0x0', rotate: str='normal', panning: str='0x0', rate: str='70'):
         self.mode = mode
         self.pos = pos
         self.rotate = rotate
         self.panning = panning
+        self.rate = rate
 
     def __repr__(self):
         return '+'.join([self.mode, self.pos.replace('x', '+')])
@@ -50,10 +51,11 @@ class Geometry:
             and self.mode == other.mode \
             and self.pos == other.pos \
             and self.rotate == other.rotate \
-            and self.panning == other.panning
+            and self.panning == other.panning \
+            and self.rate == other.rate
 
     def __hash__(self):
-        return hash(self.mode) ^ hash(self.pos) ^ hash(self.rotate) ^ hash(self.panning)
+        return hash(self.mode) ^ hash(self.pos) ^ hash(self.rotate) ^ hash(self.panning) ^ hash(self.rate)
 
 
 class Output:
