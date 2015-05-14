@@ -24,7 +24,7 @@ class Test_ProfileManager(TestCase):
                                      Output("DP1", Geometry("1920x1080", pos="1366x0"), False),
                                      Output("VGA1", Geometry("800x600", pos="3286x0", rotate="inverted",
                                                              panning="800x1080"), False)]), set(p.outputs))
-            self.assertEqual(Rule("d8578edf8458ce06fbc5bb76a58c5ca4", "1920x1080"), p.rules["DP1"])
+            self.assertEqual(Rule("d8578edf8458ce06fbc5bb76a58c5ca4", "1920x1200", "1920x1080"), p.rules["DP1"])
             self.assertEqual(Rule(), p.rules["LVDS1"])
 
     def test_simple_read(self):
@@ -54,7 +54,9 @@ class Test_ProfileManager(TestCase):
             self.assertDictEqual(
                 {'primary': 'LVDS1',
                  'match': {'LVDS1': {},
-                           'DP1': {'edid': "d8578edf8458ce06fbc5bb76a58c5ca4", 'mode': "1920x1080"}},
+                           'DP1': {'edid': "d8578edf8458ce06fbc5bb76a58c5ca4",
+                                   'supports': "1920x1080",
+                                   'prefers': "1920x1200"}},
                  'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
                              'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
@@ -84,7 +86,7 @@ class Test_ProfileManager(TestCase):
             self.assertDictEqual(
                 {'primary': 'LVDS1',
                  'match': {'LVDS1': {},
-                           'DP1': {'mode': "1920x1080"}},
+                           'DP1': {'supports': "1920x1080", 'prefers': "1920x1200"}},
                  'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
                              'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
@@ -107,7 +109,11 @@ class Test_ProfileMatcher(TestCase):
         Profile("DP1_1920x1080", [
             Output("LVDS1", Geometry("1366x768")),
             Output("DP1", Geometry("1920x1080"))
-        ], {"LVDS1": Rule(), "DP1": Rule(None, "1920x1080")}),
+        ], {"LVDS1": Rule(), "DP1": Rule(None, None, "1920x1080")}),
+        Profile("DP1_1920x1200", [
+            Output("LVDS1", Geometry("1366x768")),
+            Output("DP1", Geometry("1920x1200"))
+        ], {"LVDS1": Rule(), "DP1": Rule(None, "1920x1200", None)}),
         Profile("home", [
             Output("LVDS1", Geometry("1366x768")),
             Output("DP1", Geometry("1920x1080"))
@@ -138,6 +144,17 @@ class Test_ProfileMatcher(TestCase):
         outputs = [
             XrandrOutput("LVDS1", True),
             XrandrOutput("DP1", True, supported_modes=["1920x1080"], edid="home")
+        ]
+        best = self.matcher.find_best(self.profiles, outputs)
+        self.assertEqual(self.profiles[3], best)
+
+    def test_find_best_prefers_over_supports(self):
+        outputs = [
+            XrandrOutput("LVDS1", True),
+            XrandrOutput("DP1", True,
+                         supported_modes=["1920x1080", "1920x1200"],
+                         preferred_mode="1920x1200",
+                         edid="office")
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[2], best)

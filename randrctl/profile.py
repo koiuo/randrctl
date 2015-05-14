@@ -1,8 +1,9 @@
 import hashlib
 import logging
-from randrctl.exception import InvalidProfileException, NoSuchProfileException
 import os
 import json
+
+from randrctl.exception import InvalidProfileException, NoSuchProfileException
 from randrctl.model import Profile, Rule, Geometry, Output, XrandrOutput
 
 
@@ -64,6 +65,12 @@ class ProfileManager:
 
             if rules:
                 for k, v in rules.items():
+                    # backward compatibility for match.mode
+                    if v.get('mode'):
+                        logger.warn("%s\n\tmatch.mode is deprecated"
+                                    "\n\tConsider changing to 'supports' or 'prefers'", profile_file_descriptor.name)
+                        v['supports'] = v['mode']
+                        del v['mode']
                     rules[k] = Rule(**v)
             else:
                 rules = {}
@@ -126,7 +133,7 @@ class ProfileManager:
                 continue
             output = Output(c.name, c.current_geometry, c.primary)
             outputs.append(output)
-            rule = Rule(md5(c.edid), c.current_geometry.mode)
+            rule = Rule(md5(c.edid), c.preferred_mode, c.current_geometry.mode)
             rules[c.name] = rule
 
         logger.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
@@ -135,7 +142,6 @@ class ProfileManager:
 
 
 class ProfileMatcher:
-
     def find_best(self, availableProfiles, xrandr_outputs):
         """
         Find first matching profile across availableProfiles for actualConnections
@@ -186,23 +192,31 @@ class ProfileMatcher:
         logger.debug("%s total score: %d", p.name, s)
         return score
 
-    def score_rule(self, rule: Rule, xrandr_output: XrandrOutput):
+    @staticmethod
+    def score_rule(rule: Rule, xrandr_output: XrandrOutput):
         """
         TODO doc
-        1 if match is not needed by a criterion (i.e. edid is not set, mode is not set)
-        2 if matches by supported mode
+        0 if match is not needed by a criterion (i.e. edid is not set, mode is not set)
+        1 if matches by supported mode
+        2 if matches by preferred mode
         3 if matches by edid
         returns sum of scores, -1 if doesn't match
         """
         score = 0
         if rule.edid:
             if rule.edid == md5(xrandr_output.edid):
+                score += 3
+            else:
+                return -1
+
+        if rule.prefers:
+            if xrandr_output.preferred_mode == rule.prefers:
                 score += 2
             else:
                 return -1
 
-        if rule.mode:
-            if xrandr_output.supported_modes.count(rule.mode) > 0:
+        if rule.supports:
+            if xrandr_output.supported_modes.count(rule.supports) > 0:
                 score += 1
             else:
                 return -1

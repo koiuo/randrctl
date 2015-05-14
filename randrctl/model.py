@@ -22,17 +22,22 @@ class Rule:
     """
     Rule to match profile to xrandr connections
     """
-    def __init__(self, edid: str=None, mode: str=None):
+    def __init__(self, edid: str=None, prefers: str=None, supports: str=None):
         """
-        Rule to match against edid, mode or both. Rule matches anything if nothing is passed
+        Rule to match against edid, supported mode, preferred mode or any combination of them.
+        Rule matches anything if nothing is passed
         :param edid: edid of a display to match
-        :param mode: supported mode of a display to match
+        :param prefers: preferred mode of a display to match
+        :param supports: supported mode of a display to match
         """
         self.edid = edid
-        self.mode = mode
+        self.prefers = prefers
+        self.supports = supports
 
     def __eq__(self, other):
-        return isinstance(other, Rule) and self.edid == other.edid and self.mode == other.mode
+        return isinstance(other, Rule) and self.edid == other.edid \
+            and self.prefers == other.prefers\
+            and self.supports == other.supports
 
 
 class Geometry:
