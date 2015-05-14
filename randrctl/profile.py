@@ -189,7 +189,7 @@ class ProfileMatcher:
                 logger.debug("%s doesn't match %s", p.name, o.name)
                 score = -1
                 break
-        logger.debug("%s total score: %d", p.name, s)
+        logger.debug("%s total score: %d", p.name, score)
         return score
 
     @staticmethod
