@@ -21,6 +21,7 @@ class Xrandr:
     POS_KEY = "--pos"
     ROTATE_KEY = "--rotate"
     PANNING_KEY = "--panning"
+    RATE_KEY = "--rate"
     PRIMARY_KEY = "--primary"
     QUERY_KEY = "-q"
     VERBOSE_KEY = "--verbose"
@@ -74,6 +75,8 @@ class Xrandr:
             args.append(o.geometry.rotate)
             args.append(self.PANNING_KEY)
             args.append(o.geometry.panning)
+            args.append(self.RATE_KEY)
+            args.append(o.geometry.rate)
             if o.primary:
                 args.append(self.PRIMARY_KEY)
 
