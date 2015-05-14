@@ -45,7 +45,7 @@ Simple text file in JSON format, can be edited manually. All values are case-sen
   "match": {
     "LVDS1": {},
     "DP1": {
-        "mode": "1920x1080"
+        "prefers": "1920x1080"
     }
   },
   "outputs": {
@@ -106,20 +106,32 @@ Example:
 ```
 This profile will be considered if *DP1* and *LVDS1* are connected. It won't be if *HDMI1* is additionally connected at the same time.
 
-Also each stated output can be matched by supported ```mode``` or by connected display ```edid```.
+Also each stated output can be matched by supported ```supports``` or preferred ```prefers``` modes or by connected display ```edid```.
 
-```mode``` matches display if it supports specified mode.
+```supports``` matches display if it supports specified mode.
 
 Example:
 
 ```
 "match": {
   "DP1": {
-    "mode": "1920x1080"
+    "supports": "1920x1080"
   }
 }
 ```
-will match any display on *DP1* port that supports *1920x1080* resolution. This, for example, may be very useful if you want to create profile that is activated whenever full-HD display is connected to *HDMI* port of your laptop:
+
+```prefers``` matches display if its preferred mode (usually the most advanced one) matches
+
+Example:
+
+```
+"match": {
+  "DP1": {
+    "prefers": "1920x1080"
+  }
+}
+```
+The examples above will match any display on *DP1* port that supports (in the first case) or prefers *1920x1080* resolution. This, for example, may be very useful if you want to create profile that is activated whenever full-HD display is connected to *HDMI* port of your laptop:
 
 ```
 {
@@ -156,7 +168,7 @@ will match display whichs EDID md5-sum is equal to the specified one (to generat
 
 ### Order of matching
 
-The most specific profile is chosen among all that matched. Naturally, *edid* is more specific than supported *mode*.
+The most specific profile is chosen among all that matched. So *edid* > *prefers* > *supports*. Naturally, *edid* is more specific than preferred or supported mode.
 
 
 Prior/Post hooks
