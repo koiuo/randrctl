@@ -78,7 +78,7 @@ class Xrandr:
             args.append(o.geometry.panning)
             if o.geometry.rate:
                 args.append(self.RATE_KEY)
-                args.append(o.geometry.rate)
+                args.append(str(o.geometry.rate))
             if o.primary:
                 args.append(self.PRIMARY_KEY)
 
