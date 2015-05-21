@@ -19,7 +19,8 @@
             "mode": "800x600",
             "pos": "3286x0",
             "panning": "800x1080",
-            "rotate": "inverted"
+            "rotate": "inverted",
+            "rate": 80
         }
     },
     "primary": "LVDS1"

@@ -23,7 +23,7 @@ class Test_ProfileManager(TestCase):
             self.assertSetEqual(set([Output("LVDS1", Geometry("1366x768"), True),
                                      Output("DP1", Geometry("1920x1080", pos="1366x0"), False),
                                      Output("VGA1", Geometry("800x600", pos="3286x0", rotate="inverted",
-                                                             panning="800x1080"), False)]), set(p.outputs))
+                                                             panning="800x1080", rate=80), False)]), set(p.outputs))
             self.assertEqual(Rule("d8578edf8458ce06fbc5bb76a58c5ca4", "1920x1200", "1920x1080"), p.rules["DP1"])
             self.assertEqual(Rule(), p.rules["LVDS1"])
 
@@ -60,7 +60,7 @@ class Test_ProfileManager(TestCase):
                  'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
                              'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
-                                      'panning': "800x1080"}}}, d)
+                                      'panning': "800x1080", 'rate': 80}}}, d)
 
     def test_to_dict_no_rules(self):
         with open(self.TEST_PROFILE_FILE) as f:
@@ -74,7 +74,7 @@ class Test_ProfileManager(TestCase):
                  'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
                              'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
-                                      'panning': "800x1080"}}}, d)
+                                      'panning': "800x1080", 'rate': 80}}}, d)
 
     def test_to_dict_no_edid_rule(self):
         with open(self.TEST_PROFILE_FILE) as f:
@@ -90,7 +90,7 @@ class Test_ProfileManager(TestCase):
                  'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
                              'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
-                                      'panning': "800x1080"}}}, d)
+                                      'panning': "800x1080", 'rate': 80}}}, d)
 
 
 class Test_ProfileMatcher(TestCase):

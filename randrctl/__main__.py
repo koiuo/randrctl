@@ -70,6 +70,8 @@ class Main:
                                   help='dump with match by preferred mode', dest='match_preferred')
         command_dump.add_argument('-e', action='store_const', const=True, default=False,
                                   help='dump with match by edid', dest='match_edid')
+        command_dump.add_argument('-r', action='store_const', const=True, default=False,
+                                  help='dump current refresh rate (for all outputs)', dest='dump_rate')
         command_dump.add_argument('profile_name', help='name of the profile to dump setup to')
 
         # auto
@@ -133,11 +135,11 @@ class Main:
             self.randrctl.dump_current('current')
 
     def dump(self, args: argparse.Namespace):
-        name = args.profile_name
-        self.randrctl.dump_current(name=name, to_file=True,
+        self.randrctl.dump_current(name=args.profile_name, to_file=True,
                                    include_supports_rule=args.match_supports,
                                    include_preferred_rule=args.match_preferred,
-                                   include_edid_rule=args.match_edid)
+                                   include_edid_rule=args.match_edid,
+                                   include_refresh_rate=args.dump_rate)
 
     def auto(self, args: argparse.Namespace):
         self.randrctl.switch_auto()

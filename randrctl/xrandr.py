@@ -21,12 +21,14 @@ class Xrandr:
     POS_KEY = "--pos"
     ROTATE_KEY = "--rotate"
     PANNING_KEY = "--panning"
+    RATE_KEY = "--rate"
     PRIMARY_KEY = "--primary"
     QUERY_KEY = "-q"
     VERBOSE_KEY = "--verbose"
     OFF_KEY = "--off"
     OUTPUT_DETAILS_REGEX = re.compile('(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*$')
     MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
+    CURRENT_MODE_REGEX = re.compile("\s*([0-9x]+)\s+([0-9\.]+)(.*$)")
 
     def apply(self, profile: Profile):
         """
@@ -74,6 +76,9 @@ class Xrandr:
             args.append(o.geometry.rotate)
             args.append(self.PANNING_KEY)
             args.append(o.geometry.panning)
+            if o.geometry.rate:
+                args.append(self.RATE_KEY)
+                args.append(o.geometry.rate)
             if o.primary:
                 args.append(self.PRIMARY_KEY)
 
@@ -177,14 +182,16 @@ class Xrandr:
         supported_modes = []
         preferred_mode = None
         current_mode = None
+        current_rate = None
         for mode_line in item_lines[1:]:
             mode_line = mode_line.strip()
-            current = (mode_line.find("*") >= 0)
-            preferred = (mode_line.find("+") >= 0)
-            mode = mode_line[:mode_line.find(" ")]
+            (mode, rate, extra) = self.CURRENT_MODE_REGEX.match(mode_line).groups()
+            current = (extra.find("*") >= 0)
+            preferred = (extra.find("+") >= 0)
             supported_modes.append(mode)
             if current:
                 current_mode = mode
+                current_rate = round(float(rate))
             if preferred:
                 preferred_mode = mode
 
@@ -204,7 +211,7 @@ class Xrandr:
         panning = res if res != current_mode else '0x0'
         rotate = rotate if rotate else 'normal'
 
-        geometry = Geometry(current_mode, pos, rotate, panning)
+        geometry = Geometry(current_mode, pos, rotate, panning, current_rate)
 
         return XrandrOutput(name, connected, geometry, primary, supported_modes, preferred_mode)
 

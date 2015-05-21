@@ -6,7 +6,7 @@ Minimalistic profile based screen manager for X. It allows to store current scre
 Tool may be usefull to people who work on the same laptop at home, in the office (different external displays and different screen setup) and on the go (no external display).
 
 Currently randrctl can
-* handle *mode*, *position*, *rotation* and *panning*
+* handle *mode*, *position*, *rotation*, *panning* and *rate*
 * dump current screen setup to a profile
 * automatically (via udev) or manually switch between stored profiles
 * list all available profiles and show profile details
@@ -77,6 +77,8 @@ Each property of ```outputs``` section references output as seen in xrandr (i.e.
 * ```panning``` — output panning (it's fun http://crunchbang.org/forums/viewtopic.php?id=20634). Value example: *"1366x1080"*
 
 * ```rotate``` — output rotation. Possible values: *"normal"*, *"left"*, *"right"*, *"inverted"*
+
+* ```rate``` — output refresh rate. Optional field. If omitted xrandr will chose the best suitable rate. Values example: *60*
 
 
 ### Primary

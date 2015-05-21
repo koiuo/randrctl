@@ -78,9 +78,6 @@ class TestXrandr(TestCase):
         self.assertListEqual(query_result[6:7], grouped[2])
         self.assertListEqual(query_result[7:], grouped[3])
 
-    def test_test(self):
-        self.xrandr.get_edids()
-
     def test_edid_from_query_item(self):
         query_result = ["LVDS1 connected foo bar",
                         "\tIdentifier: 0x45",

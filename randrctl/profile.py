@@ -111,7 +111,7 @@ class ProfileManager:
         outputs = {}
         primary = None
         for o in p.outputs:
-            outputs[o.name] = o.geometry.__dict__
+            outputs[o.name] = dict((k, v) for k, v in o.geometry.__dict__.items() if v is not None)
             if o.primary:
                 primary = o.name
 
