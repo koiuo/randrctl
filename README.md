@@ -194,32 +194,31 @@ post_fail = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u critical "ra
 ```
 
 
-Upcoming features
------------------
-
-* ~~detecting connected display and choosing the most appropriate profile (only opensource linux drivers allow this). There is a prototype already~~
-* ~~completion functions for popular shells~~
-* ~~per-user profiles and configuration (no need for su/sudo)~~
-
-Open an issue here on github if you want something.
-
 Installation
 ------------
+
 
 ###Archlinux
 There is AUR package https://aur.archlinux.org/packages/randrctl-git/
 
-###Generic
+
+###PyPi
+```
+# pip install randrctl
+# randrctl-setup
+```
+
+
+###Manual from sources
 
 ```
 $ git clone https://github.com/edio/randrctl.git
 $ cd randrctl
 $ cp -r etc/randrctl ~/.config
 # python setup.py install
-# cp etc/completion/randrctl.zsh /usr/share/zsh/site-functions/_randrctl
-# cp etc/completion/randrctl.bash /usr/share/bash-completion/completions/randrctl
-# cp etc/udev/rules.d/*.rules /etc/udev/rules.d/
+# randrct-setup
 ```
+
 
 Feedback/contribution
 ---------------------
