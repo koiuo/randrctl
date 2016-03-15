@@ -1,26 +1,24 @@
 import os
 import sys
 import argparse
-
 import logging
 
-import randrctl
+import pkg_resources
+
 from randrctl.ctl import CtlFactory
 from randrctl.exception import RandrCtlException
-
 
 __author__ = 'edio'
 logger = logging.getLogger('randrctl')
 
-DUMP = 'dump'
 AUTO = 'auto'
+DUMP = 'dump'
 LIST = 'list'
-SWITCH_TO = 'switch-to'
 SHOW = 'show'
+SWITCH_TO = 'switch-to'
 
 SYS_HOME_DIR = "/etc/randrctl/"
 USER_HOME_DIR = "~/.config/randrctl/"
-HOMES = [USER_HOME_DIR, SYS_HOME_DIR]
 
 
 class Main:
@@ -38,7 +36,8 @@ class Main:
 
         parser.add_argument('--system',
                             help="read profiles and config only from {}. By default {} are used".format(SYS_HOME_DIR,
-                                                                                                        HOMES),
+                                                                                                        [USER_HOME_DIR,
+                                                                                                         SYS_HOME_DIR]),
                             action='store_const', const=True, default=False, dest="sys")
 
         commands_parsers = parser.add_subparsers(title='Available commands',
@@ -81,7 +80,7 @@ class Main:
         args = parser.parse_args(sys.argv[1:])
 
         if args.version:
-            print(randrctl.__version__)
+            print(self.get_version())
             sys.exit(0)
 
         if args.command is None:
@@ -144,6 +143,8 @@ class Main:
     def auto(self, args: argparse.Namespace):
         self.randrctl.switch_auto()
 
+    def get_version(self):
+        return pkg_resources.get_distribution("randrctl").version
 
 if __name__ == '__main__':
     Main().run()

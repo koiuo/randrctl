@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+__author__ = 'edio'
+
+import os
+import sys
+import shutil
+
+import pkg_resources
+
+locations = {
+    'randrctl config': ['misc/config.ini', '/etc/randrctl/'],
+    'udev rule': ['misc/udev/99-randrctl.rules', '/etc/udev/rules.d/'],
+    'bash completion': ['misc/completion/bash/randrctl', '/usr/share/bash-completion/'],
+    'zsh completion': ['misc/completion/zsh/_randrctl', '/usr/share/zsh/site-functions/'],
+}
+
+optional_hints = [
+    'You can copy randrctl config to ~/.config/randrctl/config.ini for per-user configuration',
+    'To reload udev rules without reboot, do as root:\n'
+    '\tudevadm control --reload-rules',
+]
+
+
+def get_real_path(path):
+    return pkg_resources.resource_filename("randrctl", path)
+
+
+def ask(question):
+    print(question + ' [Y/n]: ', end="", flush=True)
+    answer = sys.stdin.readline().strip().lower()
+    return answer != 'n'
+
+
+def main():
+    for desc, loc in locations.items():
+        if not ask('Copy {} to {}?'.format(desc, loc[1])):
+            continue
+
+        if not os.path.exists(loc[1]):
+            if not ask('{} does not exist. Create?:'.format(loc[1])):
+                continue
+            os.makedirs(loc[1])
+
+        real_path = get_real_path(loc[0])
+        shutil.copy2(real_path, loc[1])
+        print('cp {} {}'.format(real_path, loc[1]), end="\n\n", flush=True)
+
+    for hint in optional_hints:
+        print("\n" + hint)
+
+
+if __name__ == '__main__':
+    main()
