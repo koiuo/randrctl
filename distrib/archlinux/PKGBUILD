@@ -19,7 +19,7 @@ install="randrctl.install"
 
 pkgver() {
     cd $_gitname
-    python setup.py --version
+    python setup.py --version | tail -n 1
 }
 
 package() {
