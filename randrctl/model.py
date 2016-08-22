@@ -1,8 +1,76 @@
 __author__ = 'edio'
 
 
+class Display:
+    """
+    Display (i.e. physical device) connected to graphical adapter output
+    """
+
+    def __init__(self, supported_modes=None, preferred_mode: str = None, current_mode: str = None,
+                 current_rate: int = None):
+        if supported_modes is None:
+            supported_modes = []
+        self.mode = current_mode
+        self.rate = current_rate
+        self.preferred_mode = preferred_mode
+        self.supported_modes = supported_modes
+
+    def is_on(self):
+        return self.mode is not None
+
+    def __repr__(self, *args, **kwargs):
+        return str(self.__dict__)
+
+
+class Viewport:
+    """
+    Screen viewport
+    """
+
+    def __init__(self, size: str, pos: str = '0x0', rotate: str = 'normal', panning: str = '0x0', scale: str = '1x1'):
+        self.size = size
+        self.pos = pos
+        self.rotate = rotate if rotate else "normal"
+        self.panning = panning if panning else "0x0"
+        self.scale = scale if scale else "1x1"
+
+    def __repr__(self, *args, **kwargs):
+        return str(self.__dict__)
+
+    def __eq__(self, other):
+        return isinstance(other, Viewport) \
+               and self.size == other.mode \
+               and self.pos == other.pos \
+               and self.rotate == other.rotate \
+               and self.panning == other.panning \
+               and self.scale == other.scale
+
+    def __hash__(self):
+        return hash(self.size) ^ hash(self.pos) ^ hash(self.rotate) ^ hash(self.panning) ^ hash(self.scale)
+
+
+class XrandrConnection:
+    """
+    Connection between a graphic adapter output and a display with assigned viewport
+    """
+
+    def __init__(self, name: str, display: Display = None, current_geometry: Viewport = None, primary: bool = False,
+                 edid: str = None):
+        self.name = name
+        self.display = display
+        self.viewport = current_geometry
+        self.primary = primary
+        self.edid = edid
+
+    def is_active(self):
+        return self.viewport is not None
+
+    def __repr__(self, *args, **kwargs):
+        return str(self.__dict__)
+
+
 class Profile:
-    def __init__(self, name, outputs: list, rules: dict={}):
+    def __init__(self, name, outputs: list, rules: dict = None, primary: str = None):
         """
         :param name: name of the profile
         :param outputs: list of Output objects (i.e. settings to apply for each output)
@@ -10,9 +78,12 @@ class Profile:
         values are Rule instances
         """
 
+        if rules is None:
+            rules = {}
         self.name = name
         self.outputs = outputs
         self.rules = rules
+        self.primary = primary
 
     def __repr__(self):
         return self.name + str(self.outputs)
@@ -20,9 +91,11 @@ class Profile:
 
 class Rule:
     """
-    Rule to match profile to xrandr connections
+    Rule to match profile to xrandr connections.
+    Corresponds to a single entry in a match section in profile json.
     """
-    def __init__(self, edid: str=None, prefers: str=None, supports: str=None):
+
+    def __init__(self, edid: str = None, prefers: str = None, supports: str = None):
         """
         Rule to match against edid, supported mode, preferred mode or any combination of them.
         Rule matches anything if nothing is passed
@@ -36,62 +109,65 @@ class Rule:
 
     def __eq__(self, other):
         return isinstance(other, Rule) and self.edid == other.edid \
-            and self.prefers == other.prefers\
-            and self.supports == other.supports
+               and self.prefers == other.prefers \
+               and self.supports == other.supports
 
 
-class Geometry:
-    def __init__(self, mode: str, pos: str='0x0', rotate: str='normal', panning: str='0x0', rate: int=None):
+class Output:
+    """
+    Output in randrctl profile.
+    """
+
+    def __init__(self, name: str, mode: str, pos: str = "0x0", rotate: str = "normal", panning: str = "0x0",
+                 scale: str = "1x1", rate: int = None):
+        self.name = name
         self.mode = mode
         self.pos = pos
         self.rotate = rotate
         self.panning = panning
+        self.scale = scale
         self.rate = rate
 
-    def __repr__(self):
-        return '{:s}+{:s}@{:s}'.format(self.mode, self.pos.replace('x', '+'), str(self.rate))
+    def todict(self):
+        d = {
+            'mode': self.mode,
+            'pos': self.pos,
+            'rotate': self.rotate,
+            'panning': self.panning,
+            'scale': self.scale,
+            'rate': self.rate
+        }
 
-    def __eq__(self, other):
-        return isinstance(other, Geometry) \
-            and self.mode == other.mode \
-            and self.pos == other.pos \
-            and self.rotate == other.rotate \
-            and self.panning == other.panning \
-            and self.rate == other.rate
+        return dict((k, v) for k, v in d.items() if v)
 
-    def __hash__(self):
-        return hash(self.mode) ^ hash(self.pos) ^ hash(self.rotate) ^ hash(self.panning)
-
-
-class Output:
-    def __init__(self, name: str, geometry: Geometry, primary: bool=False):
-        self.name = name
-        self.geometry = geometry
-        self.primary = primary
+    @staticmethod
+    def fromconnection(connection: XrandrConnection):
+        return Output(connection.name,
+                      connection.display.mode,
+                      connection.viewport.pos,
+                      connection.viewport.rotate,
+                      connection.viewport.panning,
+                      connection.viewport.scale,
+                      connection.display.rate)
 
     def __eq__(self, obj):
         return isinstance(obj, Output) \
-            and obj.name == self.name \
-            and obj.geometry == self.geometry \
-            and obj.primary == self.primary
+               and obj.name == self.name \
+               and obj.mode == self.mode \
+               and obj.pos == self.pos \
+               and obj.rotate == self.rotate \
+               and obj.panning == self.panning \
+               and obj.scale == self.scale \
+               and obj.rate == self.rate
 
     def __repr__(self):
-        return "{0}{{{1}}}".format(self.name, self.geometry, ", primary" if self.primary else "")
+        return "{0}{{{1}}}".format(self.name, self.mode)
 
     def __hash__(self):
-        return hash(self.name) ^ hash(self.primary) ^ (0 if self.geometry is None else self.geometry.__hash__())
-
-
-class XrandrOutput:
-    def __init__(self, name: str, connected: bool=False, current_geometry: Geometry=None, primary: bool=False,
-                 supported_modes: list=None, preferred_mode=None, edid: str=None):
-        self.name = name
-        self.connected = connected
-        self.current_geometry = current_geometry
-        self.primary = primary
-        self.supported_modes = supported_modes
-        self.preferred_mode = preferred_mode
-        self.edid = edid
-
-    def is_active(self):
-        return self.current_geometry is not None
+        return hash(self.name) \
+               ^ hash(self.mode) \
+               ^ hash(self.pos) \
+               ^ hash(self.rotate) \
+               ^ hash(self.panning) \
+               ^ hash(self.scale) \
+               ^ hash(self.rate)

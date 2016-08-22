@@ -19,7 +19,7 @@ install="randrctl.install"
 
 pkgver() {
     cd $_gitname
-    python setup.py --version | tail -n 1
+    printf "%s" "$(git describe --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
 }
 
 package() {

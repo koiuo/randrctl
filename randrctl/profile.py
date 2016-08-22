@@ -4,7 +4,7 @@ import os
 import json
 
 from randrctl.exception import InvalidProfileException, NoSuchProfileException
-from randrctl.model import Profile, Rule, Geometry, Output, XrandrOutput
+from randrctl.model import Profile, Rule, Output, XrandrConnection
 
 
 __author__ = 'edio'
@@ -79,13 +79,12 @@ class ProfileManager:
             outputs_raw = result['outputs']
             outputs = []
             for name, mode_raw in outputs_raw.items():
-                mode = Geometry(**mode_raw)
-                output = Output(name, mode, primary == name)
+                output = Output(name, **mode_raw)
                 outputs.append(output)
 
             name = os.path.basename(profile_file_descriptor.name)
 
-            return Profile(name, outputs, rules)
+            return Profile(name, outputs, rules, primary)
         except (KeyError, ValueError):
             raise InvalidProfileException(profile_file_descriptor.name)
 
@@ -101,18 +100,18 @@ class ProfileManager:
         if safename != p.name:
             logger.warning("Illegal name provided. Writing as %s", fullname)
         with open(fullname, 'w+') as fp:
-            json.dump(dict, fp, indent=4)
+            json.dump(dict, fp, indent=4, sort_keys=True)
 
     def print(self, p: Profile):
         dict = self.to_dict(p)
-        print(json.dumps(dict, indent=4))
+        print(json.dumps(dict, indent=4, sort_keys=True))
 
     def to_dict(self, p: Profile):
         outputs = {}
         primary = None
         for o in p.outputs:
-            outputs[o.name] = dict((k, v) for k, v in o.geometry.__dict__.items() if v is not None)
-            if o.primary:
+            outputs[o.name] = o.todict()
+            if p.primary == o.name:
                 primary = o.name
 
         result = {'outputs': outputs, 'primary': primary}
@@ -128,17 +127,20 @@ class ProfileManager:
     def profile_from_xrandr(self, xrandr_connections: list, name: str='profile'):
         outputs = []
         rules = {}
+        primary = None
         for c in xrandr_connections:
-            if not c.connected or not c.is_active():
+            if not c.display or not c.is_active():
                 continue
-            output = Output(c.name, c.current_geometry, c.primary)
+            output = Output.fromconnection(c)
+            if c.primary:
+                primary = c.name
             outputs.append(output)
-            rule = Rule(md5(c.edid), c.preferred_mode, c.current_geometry.mode)
+            rule = Rule(md5(c.edid), c.display.preferred_mode, c.display.mode)
             rules[c.name] = rule
 
         logger.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
 
-        return Profile(name, outputs, rules)
+        return Profile(name, outputs, rules, primary)
 
 
 class ProfileMatcher:
@@ -193,7 +195,7 @@ class ProfileMatcher:
         return score
 
     @staticmethod
-    def score_rule(rule: Rule, xrandr_output: XrandrOutput):
+    def score_rule(rule: Rule, xrandr_output: XrandrConnection):
         """
         TODO doc
         0 if match is not needed by a criterion (i.e. edid is not set, mode is not set)
@@ -210,13 +212,13 @@ class ProfileMatcher:
                 return -1
 
         if rule.prefers:
-            if xrandr_output.preferred_mode == rule.prefers:
+            if xrandr_output.display.preferred_mode == rule.prefers:
                 score += 2
             else:
                 return -1
 
         if rule.supports:
-            if xrandr_output.supported_modes.count(rule.supports) > 0:
+            if xrandr_output.display.supported_modes.count(rule.supports) > 0:
                 score += 1
             else:
                 return -1

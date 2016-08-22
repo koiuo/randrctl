@@ -2,9 +2,8 @@ from functools import reduce
 import logging
 import re
 import subprocess
-from randrctl.exception import XrandrException
-from randrctl.model import Profile, Geometry, XrandrOutput
-
+from randrctl.exception import XrandrException, ParseException
+from randrctl.model import Profile, Viewport, XrandrConnection, Display
 
 __author__ = 'edio'
 logger = logging.getLogger(__name__)
@@ -22,11 +21,13 @@ class Xrandr:
     ROTATE_KEY = "--rotate"
     PANNING_KEY = "--panning"
     RATE_KEY = "--rate"
+    SCALE_KEY = "--scale"
     PRIMARY_KEY = "--primary"
     QUERY_KEY = "-q"
     VERBOSE_KEY = "--verbose"
     OFF_KEY = "--off"
-    OUTPUT_DETAILS_REGEX = re.compile('(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*$')
+    OUTPUT_DETAILS_REGEX = re.compile(
+        '(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*?(?:panning (?P<panning>[\dx\+]+))?$')
     MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
     CURRENT_MODE_REGEX = re.compile("\s*([0-9x]+)\s+([0-9\.]+)(.*$)")
 
@@ -36,10 +37,10 @@ class Xrandr:
         """
         logger.debug("Applying profile %s", profile.name)
 
-        args = self.__compose_mode_args__(profile, self.get_all_outputs())
-        self.__xrandr__(args)
+        args = self._compose_mode_args(profile, self.get_all_outputs())
+        self._xrandr(args)
 
-    def __xrandr__(self, args: list):
+    def _xrandr(self, args: list):
         """
         Perform call to xrandr executable with passed arguments.
         Returns subprocess.Popen object
@@ -57,7 +58,7 @@ class Xrandr:
             raise XrandrException(err_str, args)
         return p
 
-    def __compose_mode_args__(self, profile: Profile, xrandr_connections: list):
+    def _compose_mode_args(self, profile: Profile, xrandr_connections: list):
         """
         Composes list of arguments to xrandr to apply profile settings and disable the other outputs
         """
@@ -69,17 +70,19 @@ class Xrandr:
             args.append(self.OUTPUT_KEY)
             args.append(o.name)
             args.append(self.MODE_KEY)
-            args.append(o.geometry.mode)
+            args.append(o.mode)
             args.append(self.POS_KEY)
-            args.append(o.geometry.pos)
+            args.append(o.pos)
             args.append(self.ROTATE_KEY)
-            args.append(o.geometry.rotate)
+            args.append(o.rotate)
             args.append(self.PANNING_KEY)
-            args.append(o.geometry.panning)
-            if o.geometry.rate:
+            args.append(o.panning)
+            args.append(self.SCALE_KEY)
+            args.append(o.scale)
+            if o.rate:
                 args.append(self.RATE_KEY)
-                args.append(str(o.geometry.rate))
-            if o.primary:
+                args.append(str(o.rate))
+            if o.name == profile.primary:
                 args.append(self.PRIMARY_KEY)
 
         # turn off the others
@@ -99,15 +102,17 @@ class Xrandr:
         """
         outputs = []
 
-        p = self.__xrandr__([self.QUERY_KEY])
+        p = self._xrandr([self.QUERY_KEY])
         query_result = p.stdout.readlines()
         query_result.pop(0)  # remove first line. It describes Screen
 
-        items = self.group_query_result(map(lambda x: x.decode(), query_result))
+        items = self._group_query_result(map(lambda x: x.decode(), query_result))
+        logger.debug("Detected total %d outputs", len(items))
 
         for i in items:
-            o = self.output_from_query_item(i)
+            o = self._parse_xrandr_connection(i)
             outputs.append(o)
+
         return outputs
 
     def get_connected_outputs(self):
@@ -116,36 +121,37 @@ class Xrandr:
         Performs call to xrandr with -q and --verbose keys.
         Returns list of connected outputs with all properties set
         """
-        outputs = list(filter(lambda o: o.connected, self.get_all_outputs()))
-        edids = self.get_edids()
+        outputs = list(filter(lambda o: o.display is not None, self.get_all_outputs()))
+        edids = self._get_edids()
         for o in outputs:
             o.edid = edids[o.name]
-        logger.debug("Connected outputs: %s", outputs)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("Connected outputs: %s", list(map(lambda o: o.name, outputs)))
         return outputs
 
-    def get_edids(self):
+    def _get_edids(self):
         """
         Get EDIDs of all connected displays.
         Return dictionary of {"connection_name": "edid"}
         """
         edids = dict()
 
-        p = self.__xrandr__([self.QUERY_KEY, self.VERBOSE_KEY])
+        p = self._xrandr([self.QUERY_KEY, self.VERBOSE_KEY])
         query_result = p.stdout.readlines()
         query_result.pop(0)  # remove first line
 
-        items = self.group_query_result(map(lambda x: x.decode(), query_result))
+        items = self._group_query_result(map(lambda x: x.decode(), query_result))
 
         items = filter(lambda x: x[0].find(' connected') > 0, items)
 
         for i in items:
             name_idx = i[0].find(' ')
             name = i[0][:name_idx]
-            edids[name] = self.edid_from_query_item(i)
+            edids[name] = self._edid_from_query_item(i)
 
         return edids
 
-    def edid_from_query_item(self, item_lines: list):
+    def _edid_from_query_item(self, item_lines: list):
         """
         Extracts display EDID from xrandr --verbose output
         """
@@ -158,32 +164,55 @@ class Xrandr:
         edid = ''.join(edid_lines)
         return edid
 
-    def output_from_query_item(self, item_lines: list):
+    def _parse_xrandr_connection(self, item_lines: list):
         """
-        Creates XrandrOutput from lines returned by xrandr --query.
-        First line is an output description. Subsequent, if any, are supported modes.
+        Creates XrandrConnection from lines returned by xrandr --query.
         Example:
-        LVDS1 connected 1366x768+0+312 (normal left inverted right x axis y axis) 277mm x 156mm
+        LVDS1 connected primary 1366x768+0+312 (normal left inverted right x axis y axis) 277mm x 156mm
            1366x768      60.02*+
            1024x768      60.00
         """
-        output_info = item_lines[0]
+        connection_info = item_lines[0]
 
-        tokens = output_info.split(' ', 2)
-        name = tokens[0]
-        status = tokens[1]
-        connected = status == 'connected'
+        name, status, state = connection_info.split(' ', 2)
 
-        if not connected:
-            # if we are not connected, do not parse the rest
-            return XrandrOutput(name, connected)
+        if status != 'connected':
+            # We are not connected, do not parse the rest.
+            return XrandrConnection(name)
 
-        # we are connected parse supported modes
+        # We are connected parse connected display.
+        display = self._parse_display(item_lines[1:])
+
+        if not display.is_on():
+            # inactive output
+            return XrandrConnection(name, display)
+
+        parsed = self.OUTPUT_DETAILS_REGEX.match(state)
+        if parsed is None:
+            raise ParseException(name, status, state)
+
+        primary = parsed.group('primary') is not None
+        rotate = parsed.group('rotate')
+        panning = parsed.group('panning')
+        geometry = parsed.group('geometry')
+        size, pos = self._parse_geometry(geometry)
+        scale = '1x1'
+        if size != display.mode:
+            dw, dh = map(lambda s: int(s), display.mode.split('x'))
+            vw, vh = map(lambda s: int(s), size.split('x'))
+            sw, sh = vw/dw, vh/dh
+            scale = "{}x{}".format(sw, sh)
+
+        viewport = Viewport(size, pos, rotate, panning, scale)
+
+        return XrandrConnection(name, display, viewport, primary)
+
+    def _parse_display(self, lines: list):
         supported_modes = []
         preferred_mode = None
         current_mode = None
         current_rate = None
-        for mode_line in item_lines[1:]:
+        for mode_line in lines:
             mode_line = mode_line.strip()
             (mode, rate, extra) = self.CURRENT_MODE_REGEX.match(mode_line).groups()
             current = (extra.find("*") >= 0)
@@ -191,75 +220,41 @@ class Xrandr:
             supported_modes.append(mode)
             if current:
                 current_mode = mode
-                current_rate = round(float(rate))
+                current_rate = int(round(float(rate)))
             if preferred:
                 preferred_mode = mode
 
-        if current_mode is None:
-            # inactive output
-            return XrandrOutput(name, connected, supported_modes=supported_modes, preferred_mode=preferred_mode)
+        return Display(supported_modes, preferred_mode, current_mode, current_rate)
 
-        # if we are active parse the rest and return full-blown output
-        details = tokens[2]
-        output_details = self.parse_output_details(details)
-
-        res = output_details['res']
-        pos = output_details['pos']
-        primary = output_details['primary']
-        rotate = output_details['rotate']
-
-        panning = res if res != current_mode else '0x0'
-        rotate = rotate if rotate else 'normal'
-
-        geometry = Geometry(current_mode, pos, rotate, panning, current_rate)
-
-        return XrandrOutput(name, connected, geometry, primary, supported_modes, preferred_mode)
-
-    def group_query_result(self, query_result: list):
-        def group_fn(x, y):
-            if type(x) is str:
-                if y.startswith(' ') or y.startswith('\t'):
-                    return [[x, y]]
+    def _group_query_result(self, query_result: list):
+        """
+        Group input list of lines such that every line starting with a non-whitespace character is a start of a
+        group, and every subsequent line starting with whitespace is a member of that group.
+        :param query_result: list of lines
+        :return: list of lists of lines
+        """
+        def group_fn(result, line):
+            # We append
+            if type(result) is str:
+                if line.startswith(' ') or line.startswith('\t'):
+                    return [[result, line]]
                 else:
-                    return [[x], [y]]
+                    return [[result], [line]]
             else:
-                if y.startswith(' ') or y.startswith('\t'):
-                    last = x[len(x) - 1]
-                    last.append(y)
-                    return x
+                if line.startswith(' ') or line.startswith('\t'):
+                    last = result[len(result) - 1]
+                    last.append(line)
+                    return result
                 else:
-                    x.append([y])
-                    return x
+                    result.append([line])
+                    return result
 
-        grouped = reduce(lambda x, y: group_fn(x, y), query_result)
+        # TODO rewrite in imperative code
+        grouped = reduce(lambda result, line: group_fn(result, line), query_result)
 
         return grouped
 
-    def parse_output_details(self, s: str):
-        """
-        Creates connection from line provided by xrandr output.
-        Param s: line from xrandr output.
-        Example:
-        primary 1366x1080+0+0 left (normal left inverted right x axis y axis) 277mm x 156mm panning 1366x1080+0+0
-        """
-        match = self.OUTPUT_DETAILS_REGEX.match(s)
-        if match is None:
-            # we got inactive output
-            return {}
-
-        is_primary = match.group('primary') is not None
-        geometry_string = match.group('geometry')
-        rotate = match.group('rotate')
-
-        geometry_tokens = self.parse_geometry(geometry_string)
-        res = geometry_tokens[0]
-        pos = geometry_tokens[1]
-
-        all = {'primary': is_primary, 'pos': pos, 'res': res, 'rotate': rotate}
-
-        return all
-
-    def parse_geometry(self, s: str):
+    def _parse_geometry(self, s: str):
         """
         Parses geometry string (i.e. 1111x2222+333+444) into tuple (widthxheight, leftxtop)
         """
@@ -267,6 +262,3 @@ class Xrandr:
         mode = match.group(1)
         pos = match.group(2).replace('+', 'x')
         return mode, pos
-
-
-

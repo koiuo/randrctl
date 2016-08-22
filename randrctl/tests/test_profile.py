@@ -3,7 +3,7 @@ import logging
 import os
 from unittest import TestCase
 from randrctl import profile
-from randrctl.model import Profile, Rule, Geometry, Output, XrandrOutput
+from randrctl.model import Profile, Rule, Viewport, Output, XrandrConnection, Display
 from randrctl.profile import ProfileManager, ProfileMatcher
 
 __author__ = 'edio'
@@ -20,10 +20,11 @@ class Test_ProfileManager(TestCase):
             p = self.manager.read_file(f)
 
             self.assertIsNotNone(p)
-            self.assertSetEqual(set([Output("LVDS1", Geometry("1366x768"), True),
-                                     Output("DP1", Geometry("1920x1080", pos="1366x0"), False),
-                                     Output("VGA1", Geometry("800x600", pos="3286x0", rotate="inverted",
-                                                             panning="800x1080", rate=80), False)]), set(p.outputs))
+            self.assertSetEqual({
+                Output("LVDS1", mode="1366x768"),
+                Output("DP1", "1920x1080", pos="1366x0"),
+                Output("VGA1", "800x600", pos="3286x0", rotate="inverted", panning="800x1080", rate=80)
+            }, set(p.outputs))
             self.assertEqual(Rule("d8578edf8458ce06fbc5bb76a58c5ca4", "1920x1200", "1920x1080"), p.rules["DP1"])
             self.assertEqual(Rule(), p.rules["LVDS1"])
 
@@ -32,13 +33,13 @@ class Test_ProfileManager(TestCase):
             p = self.manager.read_file(f)
 
             self.assertIsNotNone(p)
-            self.assertSetEqual(set([Output("LVDS1", Geometry("1366x768"), True)]), set(p.outputs))
+            self.assertSetEqual({Output("LVDS1", mode="1366x768")}, set(p.outputs))
             self.assertSetEqual(set(), set(p.rules))
 
     def test_profile_from_xrandr(self):
-        xc = [XrandrOutput("LVDS1", True, Geometry("1366x768"), False),
-              XrandrOutput("DP1", True, Geometry("1920x1080", pos="1366x0"), True),
-              XrandrOutput("HDMI1", False, Geometry("1366x768"), False)]
+        xc = [XrandrConnection("LVDS1", Display(), Viewport("1366x768"), False),
+              XrandrConnection("DP1", Display(), Viewport("1920x1080", pos="1366x0"), True),
+              XrandrConnection("HDMI1", None, Viewport("1366x768"), False)]
 
         p = self.manager.profile_from_xrandr(xc)
 
@@ -57,10 +58,12 @@ class Test_ProfileManager(TestCase):
                            'DP1': {'edid': "d8578edf8458ce06fbc5bb76a58c5ca4",
                                    'supports': "1920x1080",
                                    'prefers': "1920x1200"}},
-                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
-                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
+                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0",
+                                     'scale': "1x1"},
+                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0",
+                                       'scale': "1x1"},
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
-                                      'panning': "800x1080", 'rate': 80}}}, d)
+                                      'panning': "800x1080", 'rate': 80, 'scale': "1x1"}}}, d)
 
     def test_to_dict_no_rules(self):
         with open(self.TEST_PROFILE_FILE) as f:
@@ -71,10 +74,12 @@ class Test_ProfileManager(TestCase):
             self.maxDiff = None
             self.assertDictEqual(
                 {'primary': 'LVDS1',
-                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
-                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
+                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0",
+                                     'scale': "1x1"},
+                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0",
+                                       'scale': "1x1"},
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
-                                      'panning': "800x1080", 'rate': 80}}}, d)
+                                      'panning': "800x1080", 'rate': 80, 'scale': "1x1"}}}, d)
 
     def test_to_dict_no_edid_rule(self):
         with open(self.TEST_PROFILE_FILE) as f:
@@ -87,14 +92,15 @@ class Test_ProfileManager(TestCase):
                 {'primary': 'LVDS1',
                  'match': {'LVDS1': {},
                            'DP1': {'supports': "1920x1080", 'prefers': "1920x1200"}},
-                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0"},
-                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0"},
+                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0",
+                                     'scale': "1x1"},
+                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0",
+                                       'scale': "1x1"},
                              'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
-                                      'panning': "800x1080", 'rate': 80}}}, d)
+                                      'panning': "800x1080", 'rate': 80, 'scale': "1x1"}}}, d)
 
 
 class Test_ProfileMatcher(TestCase):
-
     logging.basicConfig()
 
     matcher = ProfileMatcher()
@@ -104,65 +110,62 @@ class Test_ProfileMatcher(TestCase):
 
     profiles = [
         Profile("default", [
-            Output("LVDS1", Geometry("1366x768"))
+            Output("LVDS1", "1366x768")
         ], {"LVDS1": Rule()}),
         Profile("DP1_1920x1080", [
-            Output("LVDS1", Geometry("1366x768")),
-            Output("DP1", Geometry("1920x1080"))
+            Output("LVDS1", "1366x768"),
+            Output("DP1", "1920x1080")
         ], {"LVDS1": Rule(), "DP1": Rule(None, None, "1920x1080")}),
         Profile("DP1_1920x1200", [
-            Output("LVDS1", Geometry("1366x768")),
-            Output("DP1", Geometry("1920x1200"))
+            Output("LVDS1", "1366x768"),
+            Output("DP1", "1920x1200")
         ], {"LVDS1": Rule(), "DP1": Rule(None, "1920x1200", None)}),
         Profile("home", [
-            Output("LVDS1", Geometry("1366x768")),
-            Output("DP1", Geometry("1920x1080"))
+            Output("LVDS1", "1366x768"),
+            Output("DP1", "1920x1080")
         ], {"LVDS1": Rule(), "DP1": Rule(HOME_MD5)}),
-        Profile("no_rule", [Output("LVDS1", Geometry("800x600"))]),
+        Profile("no_rule", [Output("LVDS1", "800x600")]),
         Profile("office", [
-            Output("LVDS1", Geometry("1366x768")),
-            Output("HDMI1", Geometry("1920x1080"))
+            Output("LVDS1", "1366x768"),
+            Output("HDMI1", "1920x1080")
         ], {"LVDS1": Rule(), "HDMI1": Rule(OFFICE_MD5)})
     ]
 
     def test_find_best_default(self):
         outputs = [
-            XrandrOutput("LVDS1", True)
+            XrandrConnection("LVDS1", Display())
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[0], best)
 
     def test_find_best_no_match(self):
         outputs = [
-            XrandrOutput("LVDS1", True),
-            XrandrOutput("DP1", True, supported_modes=["1280x1024"], edid="guest")
+            XrandrConnection("LVDS1", Display()),
+            XrandrConnection("DP1", Display(["1280x1024"]), edid="guest")
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertIsNone(best)
 
     def test_find_best_edid_over_mode(self):
         outputs = [
-            XrandrOutput("LVDS1", True),
-            XrandrOutput("DP1", True, supported_modes=["1920x1080"], edid="home")
+            XrandrConnection("LVDS1", Display()),
+            XrandrConnection("DP1", Display(["1920x1080"]), edid="home")
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[3], best)
 
     def test_find_best_prefers_over_supports(self):
         outputs = [
-            XrandrOutput("LVDS1", True),
-            XrandrOutput("DP1", True,
-                         supported_modes=["1920x1080", "1920x1200"],
-                         preferred_mode="1920x1200",
-                         edid="office")
+            XrandrConnection("LVDS1", Display()),
+            XrandrConnection("DP1", Display(["1920x1080", "1920x1200"], "1920x1200"), edid="office")
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[2], best)
 
     def test_find_best_mode(self):
         outputs = [
-            XrandrOutput("LVDS1", True),
-            XrandrOutput("DP1", True, supported_modes=["1920x1080"], edid="office")
+            XrandrConnection("LVDS1", Display()),
+            XrandrConnection("DP1", Display(["1920x1080"]), edid="office")
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[1], best)
@@ -175,13 +178,13 @@ class Test_ProfileMatcher(TestCase):
         edidhash = profile.md5(edid)
 
         connected_outputs = [
-            XrandrOutput("LVDS1", True),
-            XrandrOutput("DP1", True, supported_modes=["1920x1080"], edid=edid)
+            XrandrConnection("LVDS1", Display()),
+            XrandrConnection("DP1", Display(["1920x1080"]), edid=edid)
         ]
 
         profile_outputs = [
-            Output("LVDS1", Geometry('1366x768'), True),
-            Output("DP1", Geometry('1920x1080'))
+            Output("LVDS1", Viewport('1366x768'), True),
+            Output("DP1", Viewport('1920x1080'))
         ]
 
         p1 = Profile("p1", profile_outputs, {"LVDS1": Rule(), "DP1": Rule(edidhash)})
