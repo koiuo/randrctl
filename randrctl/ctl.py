@@ -68,10 +68,6 @@ class RandrCtl:
                 if not include_edid_rule:
                     rule.edid = None
 
-        if not include_refresh_rate:
-            for output in profile.outputs:
-                output.geometry.rate = None
-
         if to_file:
             self.profile_manager.write(profile)
         else:

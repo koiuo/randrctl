@@ -22,6 +22,14 @@ class InvalidProfileException(RandrCtlException):
         Exception.__init__(self, "Invalid profile {}".format(profile_path))
 
 
+class ParseException(RandrCtlException):
+    """
+    Is thrown when randrctl fails to parse some value into a domain object
+    """
+    def __init__(self, name: str, status: str, state: str):
+        Exception.__init__(self, "Failed to parse '{}' for {} {}".format(state, status, name))
+
+
 class NoSuchProfileException(RandrCtlException):
     """
     Thrown when profile is referred by name, but no such exist
