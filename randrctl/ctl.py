@@ -49,7 +49,7 @@ class RandrCtl:
                      include_supports_rule: bool=True,
                      include_preferred_rule: bool=True,
                      include_edid_rule: bool=True,
-                     include_refresh_rate: bool=False):
+                     include_refresh_rate: bool=True):
         """
         Dump current profile under specified name. Only xrandr settings are dumped
         """
@@ -67,6 +67,10 @@ class RandrCtl:
                     rule.prefers = None
                 if not include_edid_rule:
                     rule.edid = None
+
+        if not include_refresh_rate:
+            for output in profile.outputs:
+                output.rate = None
 
         if to_file:
             self.profile_manager.write(profile)
