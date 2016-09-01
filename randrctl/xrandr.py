@@ -30,7 +30,7 @@ class Xrandr:
     OUTPUT_DETAILS_REGEX = re.compile(
         '(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*?(?:panning (?P<panning>[\dx\+]+))?$')
     MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
-    CURRENT_MODE_REGEX = re.compile("\s*([0-9x]+)\s+([0-9\.]+)(.*$)")
+    CURRENT_MODE_REGEX = re.compile("\s*(\S+)\s+([0-9\.]+)(.*$)")
 
     def apply(self, profile: Profile):
         """

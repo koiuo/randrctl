@@ -62,7 +62,7 @@ class TestXrandr(TestCase):
         connection = self.xrandr._parse_xrandr_connection(query_result)
 
         self.assertIsNotNone(connection)
-        self.assertEquals(connection.name, "DP1")
+        self.assertEqual(connection.name, "DP1")
         self.assertIsNone(connection.display)
         self.assertIsNone(connection.viewport)
         self.assertFalse(connection.primary)
@@ -77,13 +77,13 @@ class TestXrandr(TestCase):
         connection = self.xrandr._parse_xrandr_connection(query_result)
 
         self.assertIsNotNone(connection)
-        self.assertEquals("HDMI1", connection.name)
+        self.assertEqual("HDMI1", connection.name)
 
         self.assertIsNotNone(connection.display)
         self.assertIsNone(connection.display.rate)
         self.assertIsNone(connection.display.mode)
-        self.assertEquals("1920x1080", connection.display.preferred_mode)
-        self.assertEquals(["1920x1080", "1280x1024", "800x600"], connection.display.supported_modes)
+        self.assertEqual("1920x1080", connection.display.preferred_mode)
+        self.assertEqual(["1920x1080", "1280x1024", "800x600"], connection.display.supported_modes)
 
         self.assertIsNone(connection.viewport)
         self.assertFalse(connection.primary)
@@ -105,20 +105,20 @@ class TestXrandr(TestCase):
         ]
         connection = self.xrandr._parse_xrandr_connection(query_result)
         self.assertIsNotNone(connection)
-        self.assertEquals("eDP1", connection.name)
+        self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEquals(60, connection.display.rate)
-        self.assertEquals("1920x1080", connection.display.mode)
-        self.assertEquals("1920x1080", connection.display.preferred_mode)
-        self.assertEquals(["1920x1080"], connection.display.supported_modes)
+        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("1920x1080", connection.display.mode)
+        self.assertEqual("1920x1080", connection.display.preferred_mode)
+        self.assertEqual(["1920x1080"], connection.display.supported_modes)
 
         self.assertIsNotNone(connection.viewport)
-        self.assertEquals("1920x1080", connection.viewport.size)
-        self.assertEquals("0x0", connection.viewport.panning)
-        self.assertEquals("normal", connection.viewport.rotate)
-        self.assertEquals("0x0", connection.viewport.pos)
-        self.assertEquals("1x1", connection.viewport.scale)
+        self.assertEqual("1920x1080", connection.viewport.size)
+        self.assertEqual("0x0", connection.viewport.panning)
+        self.assertEqual("normal", connection.viewport.rotate)
+        self.assertEqual("0x0", connection.viewport.pos)
+        self.assertEqual("1x1", connection.viewport.scale)
 
         self.assertTrue(connection.primary)
 
@@ -129,20 +129,20 @@ class TestXrandr(TestCase):
         ]
         connection = self.xrandr._parse_xrandr_connection(query_result)
         self.assertIsNotNone(connection)
-        self.assertEquals("eDP1", connection.name)
+        self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEquals(60, connection.display.rate)
-        self.assertEquals("1920x1080", connection.display.mode)
-        self.assertEquals("1920x1080", connection.display.preferred_mode)
-        self.assertEquals(["1920x1080"], connection.display.supported_modes)
+        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("1920x1080", connection.display.mode)
+        self.assertEqual("1920x1080", connection.display.preferred_mode)
+        self.assertEqual(["1920x1080"], connection.display.supported_modes)
 
         self.assertIsNotNone(connection.viewport)
-        self.assertEquals("1920x1080", connection.viewport.size)
-        self.assertEquals("0x0", connection.viewport.panning)
-        self.assertEquals("normal", connection.viewport.rotate)
-        self.assertEquals("0x0", connection.viewport.pos)
-        self.assertEquals("1x1", connection.viewport.scale)
+        self.assertEqual("1920x1080", connection.viewport.size)
+        self.assertEqual("0x0", connection.viewport.panning)
+        self.assertEqual("normal", connection.viewport.rotate)
+        self.assertEqual("0x0", connection.viewport.pos)
+        self.assertEqual("1x1", connection.viewport.scale)
 
         self.assertFalse(connection.primary)
 
@@ -153,20 +153,20 @@ class TestXrandr(TestCase):
         ]
         connection = self.xrandr._parse_xrandr_connection(query_result)
         self.assertIsNotNone(connection)
-        self.assertEquals("eDP1", connection.name)
+        self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEquals(60, connection.display.rate)
-        self.assertEquals("1920x1080", connection.display.mode)
-        self.assertEquals("1920x1080", connection.display.preferred_mode)
-        self.assertEquals(["1920x1080"], connection.display.supported_modes)
+        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("1920x1080", connection.display.mode)
+        self.assertEqual("1920x1080", connection.display.preferred_mode)
+        self.assertEqual(["1920x1080"], connection.display.supported_modes)
 
         self.assertIsNotNone(connection.viewport)
-        self.assertEquals("1920x1080", connection.viewport.size)
-        self.assertEquals("0x0", connection.viewport.panning)
-        self.assertEquals("left", connection.viewport.rotate)
-        self.assertEquals("1280x800", connection.viewport.pos)
-        self.assertEquals("1x1", connection.viewport.scale)
+        self.assertEqual("1920x1080", connection.viewport.size)
+        self.assertEqual("0x0", connection.viewport.panning)
+        self.assertEqual("left", connection.viewport.rotate)
+        self.assertEqual("1280x800", connection.viewport.pos)
+        self.assertEqual("1x1", connection.viewport.scale)
 
         self.assertFalse(connection.primary)
 
@@ -177,20 +177,20 @@ class TestXrandr(TestCase):
         ]
         connection = self.xrandr._parse_xrandr_connection(query_result)
         self.assertIsNotNone(connection)
-        self.assertEquals("eDP1", connection.name)
+        self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEquals(60, connection.display.rate)
-        self.assertEquals("1920x1080", connection.display.mode)
-        self.assertEquals("1920x1080", connection.display.preferred_mode)
-        self.assertEquals(["1920x1080"], connection.display.supported_modes)
+        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("1920x1080", connection.display.mode)
+        self.assertEqual("1920x1080", connection.display.preferred_mode)
+        self.assertEqual(["1920x1080"], connection.display.supported_modes)
 
         self.assertIsNotNone(connection.viewport)
-        self.assertEquals("1920x1080", connection.viewport.size)
-        self.assertEquals("1920x1080+1280+800", connection.viewport.panning)
-        self.assertEquals("normal", connection.viewport.rotate)
-        self.assertEquals("1280x800", connection.viewport.pos)
-        self.assertEquals("1x1", connection.viewport.scale)
+        self.assertEqual("1920x1080", connection.viewport.size)
+        self.assertEqual("1920x1080+1280+800", connection.viewport.panning)
+        self.assertEqual("normal", connection.viewport.rotate)
+        self.assertEqual("1280x800", connection.viewport.pos)
+        self.assertEqual("1x1", connection.viewport.scale)
 
         self.assertTrue(connection.primary)
 
@@ -201,20 +201,20 @@ class TestXrandr(TestCase):
         ]
         connection = self.xrandr._parse_xrandr_connection(query_result)
         self.assertIsNotNone(connection)
-        self.assertEquals("eDP1", connection.name)
+        self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEquals(60, connection.display.rate)
-        self.assertEquals("1920x1080", connection.display.mode)
-        self.assertEquals("1920x1080", connection.display.preferred_mode)
-        self.assertEquals(["1920x1080"], connection.display.supported_modes)
+        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("1920x1080", connection.display.mode)
+        self.assertEqual("1920x1080", connection.display.preferred_mode)
+        self.assertEqual(["1920x1080"], connection.display.supported_modes)
 
         self.assertIsNotNone(connection.viewport)
-        self.assertEquals("2496x1404", connection.viewport.size)
-        self.assertEquals("2496x1404+1920+1080", connection.viewport.panning)
-        self.assertEquals("normal", connection.viewport.rotate)
-        self.assertEquals("1920x1080", connection.viewport.pos)
-        self.assertEquals("1.3x1.3", connection.viewport.scale)
+        self.assertEqual("2496x1404", connection.viewport.size)
+        self.assertEqual("2496x1404+1920+1080", connection.viewport.panning)
+        self.assertEqual("normal", connection.viewport.rotate)
+        self.assertEqual("1920x1080", connection.viewport.pos)
+        self.assertEqual("1.3x1.3", connection.viewport.scale)
 
         self.assertTrue(connection.primary)
 
