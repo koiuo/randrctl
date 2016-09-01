@@ -2,6 +2,7 @@ from functools import reduce
 import logging
 import re
 import subprocess
+
 from randrctl.exception import XrandrException, ParseException
 from randrctl.model import Profile, Viewport, XrandrConnection, Display
 
@@ -200,7 +201,7 @@ class Xrandr:
         if size != display.mode:
             dw, dh = map(lambda s: int(s), display.mode.split('x'))
             vw, vh = map(lambda s: int(s), size.split('x'))
-            sw, sh = vw/dw, vh/dh
+            sw, sh = vw / dw, vh / dh
             scale = "{}x{}".format(sw, sh)
 
         viewport = Viewport(size, pos, rotate, panning, scale)
@@ -233,6 +234,7 @@ class Xrandr:
         :param query_result: list of lines
         :return: list of lists of lines
         """
+
         def group_fn(result, line):
             # We append
             if type(result) is str:

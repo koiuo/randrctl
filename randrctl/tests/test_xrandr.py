@@ -1,6 +1,7 @@
 from unittest import TestCase
-from randrctl.exception import ValidationException, XrandrException, ParseException
-from randrctl.model import Profile, Viewport, Output, XrandrConnection
+
+from randrctl.exception import XrandrException, ParseException
+from randrctl.model import Profile, Output, XrandrConnection
 from randrctl.xrandr import Xrandr
 
 __author__ = 'edio'
@@ -52,10 +53,9 @@ class TestXrandr(TestCase):
         command = xrandr._compose_mode_args(p, xrandr_connections)
         self.assertListEqual([
             '--output', 'LVDS1', '--mode', '1366x768', '--pos', '0x0', '--rotate', 'normal', '--panning', '0x0',
-                '--scale', '1x1', '--primary',
+            '--scale', '1x1', '--primary',
             '--output', 'HDMI1', '--off'
         ], command)
-
 
     def test_parse_xrandr_connection_not_connected(self):
         query_result = ["DP1 disconnected (normal left inverted right x axis y axis)"]

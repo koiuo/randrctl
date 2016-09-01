@@ -144,5 +144,6 @@ class Main:
     def get_version(self):
         return pkg_resources.get_distribution("randrctl").version
 
+
 if __name__ == '__main__':
     Main().run()

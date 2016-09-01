@@ -6,7 +6,6 @@ import json
 from randrctl.exception import InvalidProfileException, NoSuchProfileException
 from randrctl.model import Profile, Rule, Output, XrandrConnection
 
-
 __author__ = 'edio'
 logger = logging.getLogger(__name__)
 
@@ -223,4 +222,3 @@ class ProfileMatcher:
             else:
                 return -1
         return score
-

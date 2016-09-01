@@ -6,8 +6,8 @@ class Display:
     Display (i.e. physical device) connected to graphical adapter output
     """
 
-    def __init__(self, supported_modes=None, preferred_mode: str = None, current_mode: str = None,
-                 current_rate: int = None):
+    def __init__(self, supported_modes=None, preferred_mode: str=None, current_mode: str=None,
+                 current_rate: int=None):
         if supported_modes is None:
             supported_modes = []
         self.mode = current_mode
@@ -27,7 +27,7 @@ class Viewport:
     Screen viewport
     """
 
-    def __init__(self, size: str, pos: str = '0x0', rotate: str = 'normal', panning: str = '0x0', scale: str = '1x1'):
+    def __init__(self, size: str, pos: str='0x0', rotate: str='normal', panning: str='0x0', scale: str='1x1'):
         self.size = size
         self.pos = pos
         self.rotate = rotate if rotate else "normal"
@@ -54,8 +54,8 @@ class XrandrConnection:
     Connection between a graphic adapter output and a display with assigned viewport
     """
 
-    def __init__(self, name: str, display: Display = None, current_geometry: Viewport = None, primary: bool = False,
-                 edid: str = None):
+    def __init__(self, name: str, display: Display=None, current_geometry: Viewport=None, primary: bool=False,
+                 edid: str=None):
         self.name = name
         self.display = display
         self.viewport = current_geometry
@@ -70,7 +70,7 @@ class XrandrConnection:
 
 
 class Profile:
-    def __init__(self, name, outputs: list, rules: dict = None, primary: str = None):
+    def __init__(self, name, outputs: list, rules: dict=None, primary: str=None):
         """
         :param name: name of the profile
         :param outputs: list of Output objects (i.e. settings to apply for each output)
@@ -95,7 +95,7 @@ class Rule:
     Corresponds to a single entry in a match section in profile json.
     """
 
-    def __init__(self, edid: str = None, prefers: str = None, supports: str = None):
+    def __init__(self, edid: str=None, prefers: str=None, supports: str=None):
         """
         Rule to match against edid, supported mode, preferred mode or any combination of them.
         Rule matches anything if nothing is passed
@@ -118,8 +118,8 @@ class Output:
     Output in randrctl profile.
     """
 
-    def __init__(self, name: str, mode: str, pos: str = "0x0", rotate: str = "normal", panning: str = "0x0",
-                 scale: str = "1x1", rate: int = None):
+    def __init__(self, name: str, mode: str, pos: str="0x0", rotate: str="normal", panning: str="0x0",
+                 scale: str="1x1", rate: int=None):
         self.name = name
         self.mode = mode
         self.pos = pos

@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 from unittest import TestCase
+
 from randrctl import profile
 from randrctl.model import Profile, Rule, Viewport, Output, XrandrConnection, Display
 from randrctl.profile import ProfileManager, ProfileMatcher
