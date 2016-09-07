@@ -7,13 +7,14 @@ class Display:
     """
 
     def __init__(self, supported_modes=None, preferred_mode: str=None, current_mode: str=None,
-                 current_rate: int=None):
+                 current_rate: int=None, edid: str=None):
         if supported_modes is None:
             supported_modes = []
         self.mode = current_mode
         self.rate = current_rate
         self.preferred_mode = preferred_mode
         self.supported_modes = supported_modes
+        self.edid = edid
 
     def is_on(self):
         return self.mode is not None
@@ -54,13 +55,11 @@ class XrandrConnection:
     Connection between a graphic adapter output and a display with assigned viewport
     """
 
-    def __init__(self, name: str, display: Display=None, current_geometry: Viewport=None, primary: bool=False,
-                 edid: str=None):
+    def __init__(self, name: str, display: Display=None, current_geometry: Viewport=None, primary: bool=False):
         self.name = name
         self.display = display
         self.viewport = current_geometry
         self.primary = primary
-        self.edid = edid
 
     def is_active(self):
         return self.viewport is not None
@@ -137,7 +136,6 @@ class Output:
             'scale': self.scale,
             'rate': self.rate
         }
-
         return dict((k, v) for k, v in d.items() if v)
 
     @staticmethod

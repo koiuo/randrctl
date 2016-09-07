@@ -142,7 +142,7 @@ class Test_ProfileMatcher(TestCase):
     def test_find_best_no_match(self):
         outputs = [
             XrandrConnection("LVDS1", Display()),
-            XrandrConnection("DP1", Display(["1280x1024"]), edid="guest")
+            XrandrConnection("DP1", Display(["1280x1024"], edid="guest"))
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertIsNone(best)
@@ -150,7 +150,7 @@ class Test_ProfileMatcher(TestCase):
     def test_find_best_edid_over_mode(self):
         outputs = [
             XrandrConnection("LVDS1", Display()),
-            XrandrConnection("DP1", Display(["1920x1080"]), edid="home")
+            XrandrConnection("DP1", Display(["1920x1080"], edid="home"))
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[3], best)
@@ -158,7 +158,7 @@ class Test_ProfileMatcher(TestCase):
     def test_find_best_prefers_over_supports(self):
         outputs = [
             XrandrConnection("LVDS1", Display()),
-            XrandrConnection("DP1", Display(["1920x1080", "1920x1200"], "1920x1200"), edid="office")
+            XrandrConnection("DP1", Display(["1920x1080", "1920x1200"], "1920x1200", edid="office"))
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[2], best)
@@ -166,7 +166,7 @@ class Test_ProfileMatcher(TestCase):
     def test_find_best_mode(self):
         outputs = [
             XrandrConnection("LVDS1", Display()),
-            XrandrConnection("DP1", Display(["1920x1080"]), edid="office")
+            XrandrConnection("DP1", Display(["1920x1080"], edid="office"))
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[1], best)
@@ -180,7 +180,7 @@ class Test_ProfileMatcher(TestCase):
 
         connected_outputs = [
             XrandrConnection("LVDS1", Display()),
-            XrandrConnection("DP1", Display(["1920x1080"]), edid=edid)
+            XrandrConnection("DP1", Display(["1920x1080"], edid=edid))
         ]
 
         profile_outputs = [

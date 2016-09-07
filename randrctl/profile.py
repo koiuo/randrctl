@@ -128,13 +128,14 @@ class ProfileManager:
         rules = {}
         primary = None
         for c in xrandr_connections:
-            if not c.display or not c.is_active():
+            display = c.display
+            if not display or not c.is_active():
                 continue
             output = Output.fromconnection(c)
             if c.primary:
                 primary = c.name
             outputs.append(output)
-            rule = Rule(md5(c.edid), c.display.preferred_mode, c.display.mode)
+            rule = Rule(md5(display.edid), display.preferred_mode, display.mode)
             rules[c.name] = rule
 
         logger.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
@@ -143,25 +144,27 @@ class ProfileManager:
 
 
 class ProfileMatcher:
-    def find_best(self, availableProfiles, xrandr_outputs):
+    """
+    Matches profile to xrandr connections
+    """
+    def find_best(self, available_profiles: list, xrandr_outputs: list):
         """
         Find first matching profile across availableProfiles for actualConnections
         """
-        output_names = map(lambda o: o.name, xrandr_outputs)
-        output_names_set = set(output_names)
+        output_names = set(map(lambda o: o.name, xrandr_outputs))
 
         # remove those with different outputs set
-        profiles = filter(lambda p: set(p.rules) == output_names_set, availableProfiles)
+        profiles = filter(lambda p: set(p.rules) == output_names, available_profiles)
         profiles = list(profiles)
 
-        logger.debug("%d/%d profiles match outputs sets", len(profiles), len(availableProfiles))
+        logger.debug("%d/%d profiles match outputs sets", len(profiles), len(available_profiles))
 
         if len(profiles) == 0:
             return None
 
         matching = []
         for p in profiles:
-            score = self.calculate_profile_score(p, xrandr_outputs)
+            score = self._calculate_profile_score(p, xrandr_outputs)
             if score >= 0:
                 matching.append((score, p))
 
@@ -173,7 +176,7 @@ class ProfileMatcher:
         else:
             return None
 
-    def calculate_profile_score(self, p: Profile, xrandr_outputs: list):
+    def _calculate_profile_score(self, p: Profile, xrandr_outputs: list):
         """
         Calculate how profile matches passed specific outputs.
         Return numeric score
@@ -182,7 +185,7 @@ class ProfileMatcher:
         logger.debug("Trying profile %s", p.name)
         for o in xrandr_outputs:
             rule = p.rules.get(o.name)
-            s = self.score_rule(rule, o)
+            s = self._score_rule(rule, o)
             logger.debug("%s scored %d for output %s", p.name, s, o.name)
             if s >= 0:
                 score += s
@@ -193,10 +196,8 @@ class ProfileMatcher:
         logger.debug("%s total score: %d", p.name, score)
         return score
 
-    @staticmethod
-    def score_rule(rule: Rule, xrandr_output: XrandrConnection):
+    def _score_rule(self, rule: Rule, xrandr_output: XrandrConnection):
         """
-        TODO doc
         0 if match is not needed by a criterion (i.e. edid is not set, mode is not set)
         1 if matches by supported mode
         2 if matches by preferred mode
@@ -205,7 +206,7 @@ class ProfileMatcher:
         """
         score = 0
         if rule.edid:
-            if rule.edid == md5(xrandr_output.edid):
+            if rule.edid == md5(xrandr_output.display.edid):
                 score += 3
             else:
                 return -1

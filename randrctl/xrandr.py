@@ -125,7 +125,7 @@ class Xrandr:
         outputs = list(filter(lambda o: o.display is not None, self.get_all_outputs()))
         edids = self._get_edids()
         for o in outputs:
-            o.edid = edids[o.name]
+            o.display.edid = edids[o.name]
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("Connected outputs: %s", list(map(lambda o: o.name, outputs)))
         return outputs
