@@ -38,17 +38,6 @@ class Viewport:
     def __repr__(self, *args, **kwargs):
         return str(self.__dict__)
 
-    def __eq__(self, other):
-        return isinstance(other, Viewport) \
-               and self.size == other.mode \
-               and self.pos == other.pos \
-               and self.rotate == other.rotate \
-               and self.panning == other.panning \
-               and self.scale == other.scale
-
-    def __hash__(self):
-        return hash(self.size) ^ hash(self.pos) ^ hash(self.rotate) ^ hash(self.panning) ^ hash(self.scale)
-
 
 class XrandrConnection:
     """
@@ -106,10 +95,8 @@ class Rule:
         self.prefers = prefers
         self.supports = supports
 
-    def __eq__(self, other):
-        return isinstance(other, Rule) and self.edid == other.edid \
-               and self.prefers == other.prefers \
-               and self.supports == other.supports
+    def __repr__(self):
+        return str(self.__dict__)
 
 
 class Output:
@@ -148,24 +135,5 @@ class Output:
                       connection.viewport.scale,
                       connection.display.rate)
 
-    def __eq__(self, obj):
-        return isinstance(obj, Output) \
-               and obj.name == self.name \
-               and obj.mode == self.mode \
-               and obj.pos == self.pos \
-               and obj.rotate == self.rotate \
-               and obj.panning == self.panning \
-               and obj.scale == self.scale \
-               and obj.rate == self.rate
-
     def __repr__(self):
         return "{0}{{{1}}}".format(self.name, self.mode)
-
-    def __hash__(self):
-        return hash(self.name) \
-               ^ hash(self.mode) \
-               ^ hash(self.pos) \
-               ^ hash(self.rotate) \
-               ^ hash(self.panning) \
-               ^ hash(self.scale) \
-               ^ hash(self.rate)

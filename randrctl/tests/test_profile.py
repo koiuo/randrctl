@@ -21,21 +21,31 @@ class Test_ProfileManager(TestCase):
             p = self.manager.read_file(f)
 
             self.assertIsNotNone(p)
-            self.assertSetEqual({
+
+            expected = [
                 Output("LVDS1", mode="1366x768"),
                 Output("DP1", "1920x1080", pos="1366x0"),
                 Output("VGA1", "800x600", pos="3286x0", rotate="inverted", panning="800x1080", rate=80)
-            }, set(p.outputs))
-            self.assertEqual(Rule("d8578edf8458ce06fbc5bb76a58c5ca4", "1920x1200", "1920x1080"), p.rules["DP1"])
-            self.assertEqual(Rule(), p.rules["LVDS1"])
+            ]
+            self.assertOutputs(expected, p.outputs)
+            self.assertDictEqual(Rule("d8578edf8458ce06fbc5bb76a58c5ca4", "1920x1200", "1920x1080").__dict__,
+                             p.rules["DP1"].__dict__)
+            self.assertDictEqual(Rule().__dict__, p.rules["LVDS1"].__dict__)
 
     def test_simple_read(self):
         with open(self.TEST_SIMPLE_PROFILE_FILE) as f:
             p = self.manager.read_file(f)
 
             self.assertIsNotNone(p)
-            self.assertSetEqual({Output("LVDS1", mode="1366x768")}, set(p.outputs))
-            self.assertSetEqual(set(), set(p.rules))
+            self.assertOutputs([Output("LVDS1", mode="1366x768")], p.outputs)
+            self.assertEqual(0, len(p.rules))
+
+    def assertOutputs(self, expected_outputs: list, profile_outputs: list):
+        self.assertEqual(len(expected_outputs), len(profile_outputs))
+        for eo in expected_outputs:
+            matching_output = next(filter(lambda po: po.name == eo.name, profile_outputs), None)
+            self.assertIsNotNone(matching_output, "Expected {} among {}".format(eo.name, profile_outputs))
+            self.assertDictEqual(eo.__dict__, matching_output.__dict__)
 
     def test_profile_from_xrandr(self):
         xc = [XrandrConnection("LVDS1", Display(), Viewport("1366x768"), False),
