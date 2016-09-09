@@ -1,44 +1,99 @@
-randrctl
-========
+# randrctl
 
-Minimalistic profile based screen manager for X. It allows to store current screen setup in a declarative configuration file (a profile) and apply stored settigns later with a simple command.
+Screen profiles manager for X.
 
-Tool may be usefull to people who work on the same laptop at home, in the office (different external displays and different screen setup) and on the go (no external display).
+It allows to store current screen setup in a declarative configuration file (a profile) and apply stored settings later
+with a simple command.
 
-Currently randrctl can
-* handle *mode*, *position*, *rotation*, *panning* and *rate*
-* dump current screen setup to a profile
-* automatically (via udev) or manually switch between stored profiles
-* list all available profiles and show profile details
-* run custom commands before/after the switch or when it fails for some reason
+Tool may be useful to people who work on their laptop connecting external displays in many different locations.
 
 Usage is very simple:
 
-1. Setup your screen to suit your needs and dump settings to use them later
+0. Setup your screen to suit your needs (randrctl does not handle that)
 
-  ```randrctl dump home```
+1. Dump settings with randrctl to a named profile
 
-2. After this you can reapply these settings whenever you need them
+  ```randrctl dump -e home```
+
+2. Re-apply those settings, whenever you need them
 
   ```randrctl switch-to home```
 
-3. ... or let randrctl to guess your settings automatically
+3. ... or let randrctl to inspect currently connected displays and choose profile that fits them best
 
   ```randrctl auto```
+
+  Auto-switching will also happen automatically if provided udev rules are installed to the system.
   
-4. You can list all available profiles
+4. For more info on usage refer to help
 
-  ```randrctl list```
-  
-5. And if you are interested in some particular profile
-
-  ```randrctl show home```
+  ```randrctl --help```
 
 
-Profile format
---------------
+## Auto-switching<a name="auto"></a>
 
-Simple text file in JSON format, can be edited manually. All values are case-sensitive, white-spaces don't matter.
+```randrctl``` can associate profile with currently connected displays and switch to this profile automatically whenever
+same (or similar) set of displays is connected.
+
+Profile is matched to the set of connected displays by evaluating one or more of the following rules for every connected
+display:
+
+* list of supported modes of connected display includes the current mode
+
+  ```randrctl dump -m profile1```
+
+  You can use this to create profile that is activated whenever connected display supports the mode that is currently
+  set for that output.
+
+* preferred mode of connected display is the current mode
+
+  ```randrctl dump -p profile2```
+
+  Display can support wide range of modes from 640x480 to 1920x1200, but prefer only one of those. When dumped this way,
+  profile is considered a match if connected display prefers the mode, that is currently set for it.
+
+* unique identifier of connected display is exactly tha same
+
+  ```randrctl dump -e profile3```
+
+  Unique identifier (edid) of every display is dumped with the profile, so it matches, only if exactly same displays
+  are connected.
+
+Naturally, the more specific the rule, the bigger weight it has, so in case if you invoked those 3 dump commands above
+with the same displays connected, `profile3` will be chosen as the best (i.e. the most specific) match.
+
+It is possible to specify any combination of `-m -p -e` keys to dump command. In this case randrctl will try to match
+all the rules combining them with logical AND (for example, display must support and at the same time prefer the mode).
+Although such combination of rules might seem redundant (because if the more specific rule matches, the more generic
+will do too), it might have sense if rule is edited manually.
+
+If `randrctl dump` is invoked without additional options, it dumps only screen setup, so profile won't be considered
+during auto-switching.
+
+
+## Prior/Post hooks
+
+randrctl can execute custom commands (hooks) before and after switching to profile or if switching fails. Hooks are
+specified in config file `$XDG_CONFIG_HOME/randrctl/config.ini`
+
+```
+[hooks]
+prior_switch = /usr/bin/killall -SIGSTOP i3
+post_switch = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u low "randrctl" "switched to $randr_profile"
+post_fail = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u critical "randrctl error" "$randr_error"
+```
+
+The typical use-case of this is displaying desktop notification with libnotify.
+
+I also use it to pause i3 window manager as it was known to crash sometimes during the switch.
+
+
+## Profile format
+
+Profile is a simple text file in JSON format. It can be edited manually, however it is rarely required in practice
+because `randrctl dump` handles most common cases.
+
+As in usual JSON all values are case-sensitive, white-spaces don't matter.
 
 ```
 {
@@ -63,84 +118,87 @@ Simple text file in JSON format, can be edited manually. All values are case-sen
 }
 ```
 
-Profile should contain 2 sections (```outputs``` and ```primary```) for manual switching. The ```match``` section is optional and is used for auto-switching.
+Profile is required to contain 2 sections (`outputs` and `primary`). That is what dumped when `randrctl dump` is invoked
+without additional options.
+
+The `match` section is optional and is dumped only when one of the auto-switching rules is specified.
 
 
 ### Outputs
 
-Each property of ```outputs``` section references output as seen in xrandr (i.e. *DP1*, *HDMI2*, etc.). Each output must contain ```mode``` property. Here is a list of output properties:
+Each property of `outputs` section references output as seen in xrandr (i.e. *DP1*, *HDMI2*, etc.). Meaning of the
+properties is the same as in the xrandr utility.
 
-* ```mode``` — output resolution. Value example: *"1920x1080"*
+`mode` is mandatory, the others may be omitted.
 
-* ```pos``` — output position. Value example: *"312x0"*
-
-* ```panning``` — output panning (it's fun http://crunchbang.org/forums/viewtopic.php?id=20634). Value example: *"1366x1080"*
-
-* ```rotate``` — output rotation. Possible values: *"normal"*, *"left"*, *"right"*, *"inverted"*
-
-* ```rate``` — output refresh rate. Optional field. If omitted xrandr will chose the best suitable rate. Values example: *60*
+```
+"DP1-2": {
+    "mode": "1920x1200",
+    "panning": "2496x1560+1920+0",
+    "pos": "1920x0",
+    "rate": 60,
+    "rotate": "normal",
+    "scale": "1.3x1.3"
+},
+```
 
 
 ### Primary
 
-Just name of the primary output.
+Name of the primary output as seen in xrandr.
 
+```
+"primary": "eDP1"
+```
 
 ### Match
 
-See [auto-switching](auto) section.
+Set of rules for auto-switching.
 
-
-Auto-switching<a name="auto"></a>
----------------------------------------
-
-```randrctl``` is able to associate profiles with your hardware configuration and switch between them automatically. To do so, ```match``` section should be declared in profile. As in ```outputs``` section, properties of this section are names of outputs to match.
-
-Profile is considered for matching if and only if all stated outputs are currently connected.
-
-Example:
+The minimum rule is
 
 ```
-"match": {
-  "LVDS1": {},
-  "DP1": {}
-}
+"HDMI1": {}
 ```
-This profile will be considered if *DP1* and *LVDS1* are connected. It won't be if *HDMI1* is additionally connected at the same time.
 
-Also each stated output can be matched by supported ```supports``` or preferred ```prefers``` modes or by connected display ```edid```.
+which means, that something must be connected to that output.
 
-```supports``` matches display if it supports specified mode.
-
-Example:
+Rule corresponding to `randrctl dump -m` would be
 
 ```
-"match": {
-  "DP1": {
+"HDMI1": {
     "supports": "1920x1080"
-  }
 }
 ```
 
-```prefers``` matches display if its preferred mode (usually the most advanced one) matches
-
-Example:
+`randrctl dump -p` is
 
 ```
-"match": {
-  "DP1": {
+"HDMI1": {
     "prefers": "1920x1080"
-  }
 }
 ```
-The examples above will match any display on *DP1* port that supports (in the first case) or prefers *1920x1080* resolution. This, for example, may be very useful if you want to create profile that is activated whenever full-HD display is connected to *HDMI* port of your laptop:
+
+and `randrctl dump -e` is
+
+```
+"HDMI1": {
+    "edid": "efdbca373951c898c5775e1c9d26c77f"
+}
+```
+
+`edid` is md5 hash of actual display's `edid`. To obtain that value, use `randrctl show`.
+
+As was mentioned, `prefers`, `supports` and `edid` can be combined in the same rule, so it is possible to manually
+create a more sophisticated rule
 
 ```
 {
   "match": {
     "LVDS1": {},
     "HDMI1": {
-      "mode": "1920x1080"
+      "prefers": "1600x1200",
+      "supports": "800x600"
     }
   },
   "outputs": {
@@ -154,55 +212,16 @@ The examples above will match any display on *DP1* port that supports (in the fi
 }
 ```
 
-```edid``` matching will look for specific display identified by edid.
 
-Example:
-
-```
-"match": {
-  "DP1": {
-    "edid": "d8578edf8458ce06fbc5bb76a58c5ca4",
-  }
-}
-```
-will match display whichs EDID md5-sum is equal to the specified one (to generate profile with proper edid value use ```randrctl dump```)
-
-
-### Order of matching
-
-The most specific profile is chosen among all that matched. So *edid* > *prefers* > *supports*. Naturally, *edid* is more specific than preferred or supported mode.
-
-
-Prior/Post hooks
-------------------
-
-Some window managers (i.e. i3) are known to crash when screen setup is changed. Common workaround for this is:
-
-```
-killall -SIGSTOP i3
-xrandr ...
-killall -SIGCONT i3
-```
-
-randrctl handles this by allowing to declare hooks to be executed before and after call to xrandr. This is also useful if you want to show desktop notification on profile switch or failure. Declare them all in /etc/randrctl/config.ini
-
-```
-[hooks]
-prior_switch = /usr/bin/killall -SIGSTOP i3
-post_switch = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u low "randrctl" "switched to $randr_profile"
-post_fail = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u critical "randrctl error" "$randr_error"
-```
-
-
-Installation
-------------
-
+## Installation
 
 ###Archlinux
+
 There is AUR package https://aur.archlinux.org/packages/randrctl-git/
 
 
 ###PyPi
+
 ```
 # pip install randrctl
 # randrctl-setup
@@ -220,12 +239,5 @@ $ cp -r etc/randrctl ~/.config
 ```
 
 
-Feedback/contribution
----------------------
-
-This is my very first python project. Comments regarding code quality and suggestions are welcome. 
-
-
-License
--------
+## License
 GPLv3
