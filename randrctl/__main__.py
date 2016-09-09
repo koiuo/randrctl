@@ -8,7 +8,6 @@ import pkg_resources
 from randrctl.ctl import CtlFactory
 from randrctl.exception import RandrCtlException
 
-__author__ = 'edio'
 logger = logging.getLogger('randrctl')
 
 AUTO = 'auto'
@@ -18,7 +17,10 @@ SHOW = 'show'
 SWITCH_TO = 'switch-to'
 
 SYS_HOME_DIR = "/etc/randrctl/"
-USER_HOME_DIR = "~/.config/randrctl/"
+
+
+def get_user_home():
+    return os.path.join(os.environ.get('XDG_CONFIG_HOME', os.path.join(os.environ.get('HOME'), '.config')), 'randrctl')
 
 
 class Main:
@@ -36,7 +38,7 @@ class Main:
 
         parser.add_argument('--system',
                             help="read profiles and config only from {}. By default {} are used".format(SYS_HOME_DIR,
-                                                                                                        [USER_HOME_DIR,
+                                                                                                        [get_user_home(),
                                                                                                          SYS_HOME_DIR]),
                             action='store_const', const=True, default=False, dest="sys")
 
@@ -97,7 +99,7 @@ class Main:
 
         logging.basicConfig(format=format, level=level)
 
-        homes = [SYS_HOME_DIR] if args.sys else [os.path.expanduser(USER_HOME_DIR), SYS_HOME_DIR]
+        homes = [SYS_HOME_DIR] if args.sys else [get_user_home(), SYS_HOME_DIR]
 
         # randrctl
         factory = CtlFactory(homes)

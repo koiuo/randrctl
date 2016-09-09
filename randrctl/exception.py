@@ -1,6 +1,3 @@
-__author__ = 'edio'
-
-
 class RandrCtlException(Exception):
     """
     Is thrown whenever expected exception occurs inside the app

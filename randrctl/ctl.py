@@ -7,8 +7,6 @@ from randrctl.model import Profile
 from randrctl.profile import ProfileManager, ProfileMatcher
 from randrctl.xrandr import Xrandr
 
-__author__ = 'edio'
-
 logger = logging.getLogger(__name__)
 
 

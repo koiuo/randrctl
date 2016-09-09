@@ -6,7 +6,6 @@ import subprocess
 from randrctl.exception import XrandrException, ParseException
 from randrctl.model import Profile, Viewport, XrandrConnection, Display
 
-__author__ = 'edio'
 logger = logging.getLogger(__name__)
 
 

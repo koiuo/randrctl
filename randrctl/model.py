@@ -1,6 +1,3 @@
-__author__ = 'edio'
-
-
 class Display:
     """
     Display (i.e. physical device) connected to graphical adapter output
