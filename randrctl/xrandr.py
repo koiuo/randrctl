@@ -196,11 +196,18 @@ class Xrandr:
         panning = parsed.group('panning')
         geometry = parsed.group('geometry')
         size, pos = self._parse_geometry(geometry)
+
+        is_rotated = rotate in ['left', 'right']
+        if is_rotated:
+            size = 'x'.join(size.split('x')[::-1])
+
         scale = '1x1'
         if size != display.mode:
             dw, dh = map(lambda s: int(s), display.mode.split('x'))
             vw, vh = map(lambda s: int(s), size.split('x'))
             sw, sh = vw / dw, vh / dh
+            if is_rotated:
+                sw, sh = sh, sw
             scale = "{}x{}".format(sw, sh)
 
         viewport = Viewport(size, pos, rotate, panning, scale)
