@@ -101,6 +101,19 @@ class RandrCtl:
             for o in p.outputs:
                 print('  ', o)
 
+    def list_all_scored(self):
+        """
+        List matched profiles with scores
+        """
+        profiles = self.profile_manager.read_all()
+        xrandr_outputs = self.xrandr.get_connected_outputs()
+
+        profileMatcher = ProfileMatcher()
+        matching = profileMatcher.match(profiles, xrandr_outputs)
+
+        for score, p in matching:
+            print(p.name, score)
+
 
 class Hook:
     """

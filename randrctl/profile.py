@@ -147,9 +147,9 @@ class ProfileMatcher:
     """
     Matches profile to xrandr connections
     """
-    def find_best(self, available_profiles: list, xrandr_outputs: list):
+    def match(self, available_profiles: list, xrandr_outputs: list):
         """
-        Find first matching profile across availableProfiles for actualConnections
+        return a sorted list of matched profiles
         """
         output_names = set(map(lambda o: o.name, xrandr_outputs))
 
@@ -167,6 +167,15 @@ class ProfileMatcher:
             score = self._calculate_profile_score(p, xrandr_outputs)
             if score >= 0:
                 matching.append((score, p))
+
+        return sorted(matching, key=lambda x: x[0])
+
+
+    def find_best(self, available_profiles: list, xrandr_outputs: list):
+        """
+        find first matching profile across availableprofiles for actualconnections
+        """
+        matching = self.match(available_profiles, xrandr_outputs)
         max_score = max([s[0] for s in matching])
         matching = list([m[1] for m in matching if m[0] == max_score])
 
