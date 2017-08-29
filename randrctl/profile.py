@@ -167,8 +167,7 @@ class ProfileMatcher:
             score = self._calculate_profile_score(p, xrandr_outputs)
             if score >= 0:
                 matching.append((score, p))
-
-        return sorted(matching, key=lambda x: x[0])
+        return sorted(matching, key=lambda x: x[0], reverse=True)
 
 
     def find_best(self, available_profiles: list, xrandr_outputs: list):
