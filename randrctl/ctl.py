@@ -45,12 +45,14 @@ class RandrCtl:
                      include_supports_rule: bool=True,
                      include_preferred_rule: bool=True,
                      include_edid_rule: bool=True,
-                     include_refresh_rate: bool=True):
+                     include_refresh_rate: bool=True,
+                     priority: int=100):
         """
         Dump current profile under specified name. Only xrandr settings are dumped
         """
         xrandr_connections = self.xrandr.get_connected_outputs()
         profile = self.profile_manager.profile_from_xrandr(xrandr_connections, name)
+        profile.priority = priority
 
         # TODO move logic to manager
         if not (include_edid_rule or include_supports_rule or include_preferred_rule):

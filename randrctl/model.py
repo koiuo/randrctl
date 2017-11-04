@@ -55,7 +55,7 @@ class XrandrConnection:
 
 
 class Profile:
-    def __init__(self, name, outputs: list, rules: dict=None, primary: str=None):
+    def __init__(self, name, outputs: list, rules: dict=None, primary: str=None, priority: int=100):
         """
         :param name: name of the profile
         :param outputs: list of Output objects (i.e. settings to apply for each output)
@@ -69,6 +69,7 @@ class Profile:
         self.outputs = outputs
         self.rules = rules
         self.primary = primary
+        self.priority = priority
 
     def __repr__(self):
         return self.name + str(self.outputs)
