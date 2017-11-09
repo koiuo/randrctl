@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/edio/randrctl.svg?branch=master)](https://travis-ci.org/edio/randrctl)
+
 # randrctl
 
 Screen profiles manager for X.
