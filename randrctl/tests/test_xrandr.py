@@ -162,11 +162,11 @@ class TestXrandr(TestCase):
         self.assertEqual(["1920x1080"], connection.display.supported_modes)
 
         self.assertIsNotNone(connection.viewport)
-        self.assertEqual("1920x1080", connection.viewport.size)
+        self.assertEqual("1080x1920", connection.viewport.size)
         self.assertEqual("0x0", connection.viewport.panning)
         self.assertEqual("left", connection.viewport.rotate)
         self.assertEqual("1280x800", connection.viewport.pos)
-        self.assertEqual("1x1", connection.viewport.scale)
+        self.assertEqual("1.7777777777777777x0.5625", connection.viewport.scale)
 
         self.assertFalse(connection.primary)
 
