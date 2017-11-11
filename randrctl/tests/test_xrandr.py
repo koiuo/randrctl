@@ -225,7 +225,7 @@ class TestXrandr(TestCase):
 
     def test_xrandr_exception(self):
         try:
-            self.xrandr._xrandr(["--output", "FOOBAR", "--mode", "800x600+0+0"])
+            self.xrandr._xrandr("--output", "FOOBAR", "--mode", "800x600+0+0")
             self.fail("exception expected")
         except XrandrException:
             pass
@@ -262,11 +262,14 @@ class TestXrandr(TestCase):
                         "\t\t5",
                         "\t\t6",
                         "\t\t7",
+                        "\t\t8",
+                        "\t\t9",
+                        "\t\t10",
                         "\tBroadcast RGB: Automatic",
                         "\t\tsupported: Automatic, Full",
                         "\taudio: auto",
                         "\t\tsupported: auto, on"
                         ]
 
-        edid = self.xrandr._edid_from_query_item(query_result)
+        edid = self.xrandr._field_from_query_item(query_result, 'EDID')
         self.assertEqual("01234567", edid)

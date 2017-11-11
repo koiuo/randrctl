@@ -162,6 +162,7 @@ class Xrandr:
         val = ''
         indent = ''
         in_field = False
+        lines_collected = 0
         for i, line in enumerate(item_lines):
             m = re.match(r'(\s+)(.*):\s*(.*)$', line)
             if m and m.group(2).lower() == field.lower():
@@ -174,6 +175,9 @@ class Xrandr:
                 return val
             elif in_field:
                 val += line.strip()
+                lines_collected += 1
+                if field == 'EDID' and lines_collected >= 8:
+                    return val
 
         return val
 
