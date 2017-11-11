@@ -212,6 +212,43 @@ create a more sophisticated rule
 }
 ```
 
+### Priority
+
+When more than one profile matches current output configuration priority can be used to highlight preferred profile.
+Example: You have a laptop and you connect it to different foreign monitors and disable internal laptop's display at the same time.
+With priorities it is possible to create one default profile like this one:
+```
+{
+  "priority": 50,
+  "match": {
+    "LVDS1": {},
+  },
+  "outputs": {
+    "LVDS1": {
+      ...
+    },
+  }
+}
+```
+and one profile for all the foreign monitors connected to HDMI1 port:
+```
+{
+  "priority": 100,
+  "match": {
+    "HDMI1": {}
+  },
+  "outputs": {
+    "HDMI1": {
+      ...
+    }
+  }
+}
+```
+profile with higher priority wins, so when you connect an external display to HDMI1 port the second profile will match
+and internal display will be switched off
+Default priority is `100`. To set profile priority use `-P <priority>` with `dump` command. Like this:
+`randrctl dump -e default -P 50`
+
 
 ## Installation
 
