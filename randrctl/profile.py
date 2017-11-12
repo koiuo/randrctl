@@ -60,6 +60,7 @@ class ProfileManager:
             result = json.load(profile_file_descriptor)
 
             rules = result.get('match')
+            priority = int(result.get('priority', 100))
 
             if rules:
                 for k, v in rules.items():
@@ -82,7 +83,7 @@ class ProfileManager:
 
             name = os.path.basename(profile_file_descriptor.name)
 
-            return Profile(name, outputs, rules, primary)
+            return Profile(name, outputs, rules, primary, priority)
         except (KeyError, ValueError):
             raise InvalidProfileException(profile_file_descriptor.name)
 
@@ -112,7 +113,7 @@ class ProfileManager:
             if p.primary == o.name:
                 primary = o.name
 
-        result = {'outputs': outputs, 'primary': primary}
+        result = {'outputs': outputs, 'primary': primary, 'priority': p.priority}
 
         if p.rules:
             rules = {}
@@ -152,8 +153,8 @@ class ProfileMatcher:
         """
         output_names = set(map(lambda o: o.name, xrandr_outputs))
 
-        # remove those with different outputs set
-        profiles = filter(lambda p: set(p.rules) == output_names, available_profiles)
+        # remove those with disconnected outputs
+        profiles = filter(lambda p: len(set(p.rules) - output_names) == 0, available_profiles)
         profiles = list(profiles)
 
         logger.debug("%d/%d profiles match outputs sets", len(profiles), len(available_profiles))
@@ -166,11 +167,14 @@ class ProfileMatcher:
             score = self._calculate_profile_score(p, xrandr_outputs)
             if score >= 0:
                 matching.append((score, p))
+        max_score = max([s[0] for s in matching])
+        matching = list([m[1] for m in matching if m[0] == max_score])
 
         if len(matching) > 0:
-            # profiles are unorderable, so we only consider score
-            (s, p) = max(matching, key=lambda t: t[0])
-            logger.debug("Selected profile %s with score %d", p.name, s)
+            logger.debug("Found %d profiles with maximum score %d", len(matching), max_score)
+            matching.sort(key=lambda x: x.priority, reverse=True)
+            p = matching[0]
+            logger.debug("Selected profile %s with score %d and priority %d", p.name, max_score, p.priority)
             return p
         else:
             return None
@@ -184,7 +188,7 @@ class ProfileMatcher:
         logger.debug("Trying profile %s", p.name)
         for o in xrandr_outputs:
             rule = p.rules.get(o.name)
-            s = self._score_rule(rule, o)
+            s = self._score_rule(rule, o) if rule is not None else 0
             logger.debug("%s scored %d for output %s", p.name, s, o.name)
             if s >= 0:
                 score += s

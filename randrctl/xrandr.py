@@ -1,4 +1,4 @@
-from functools import reduce
+from functools import reduce, lru_cache
 import logging
 import re
 import subprocess
@@ -23,6 +23,7 @@ class Xrandr:
     RATE_KEY = "--rate"
     SCALE_KEY = "--scale"
     PRIMARY_KEY = "--primary"
+    CRTC_KEY = "--crtc"
     QUERY_KEY = "-q"
     VERBOSE_KEY = "--verbose"
     OFF_KEY = "--off"
@@ -38,13 +39,15 @@ class Xrandr:
         logger.debug("Applying profile %s", profile.name)
 
         args = self._compose_mode_args(profile, self.get_all_outputs())
-        self._xrandr(args)
+        self._xrandr(*args)
 
-    def _xrandr(self, args: list):
+    @lru_cache()
+    def _xrandr(self, *args):
         """
         Perform call to xrandr executable with passed arguments.
         Returns subprocess.Popen object
         """
+        args = list(args)
         logger.debug("Calling xrandr with args %s", args)
         args.insert(0, self.EXECUTABLE)
 
@@ -56,7 +59,10 @@ class Xrandr:
             p.stdout.close()
             err_str = ''.join(map(lambda x: x.decode(), err)).strip()
             raise XrandrException(err_str, args)
-        return p
+        out = list(map(lambda x: x.decode(), p.stdout.readlines()))
+        if out:
+            out.pop(0)  # remove first line. It describes Screen
+        return out
 
     def _compose_mode_args(self, profile: Profile, xrandr_connections: list):
         """
@@ -84,6 +90,9 @@ class Xrandr:
                 args.append(str(o.rate))
             if o.name == profile.primary:
                 args.append(self.PRIMARY_KEY)
+            if o.crtc is not None:
+                args.append(self.CRTC_KEY)
+                args.append(str(o.crtc))
 
         # turn off the others
         for c in xrandr_connections:
@@ -102,15 +111,14 @@ class Xrandr:
         """
         outputs = []
 
-        p = self._xrandr([self.QUERY_KEY])
-        query_result = p.stdout.readlines()
-        query_result.pop(0)  # remove first line. It describes Screen
-
-        items = self._group_query_result(map(lambda x: x.decode(), query_result))
+        items = self._xrandr(self.QUERY_KEY)
+        items = self._group_query_result(items)
         logger.debug("Detected total %d outputs", len(items))
+        crtcs = self._get_verbose_fields('CRTC')
 
         for i in items:
             o = self._parse_xrandr_connection(i)
+            o.crtc = int(crtcs[o.name]) if o.name in crtcs and len(crtcs[o.name]) else None
             outputs.append(o)
 
         return outputs
@@ -122,47 +130,56 @@ class Xrandr:
         Returns list of connected outputs with all properties set
         """
         outputs = list(filter(lambda o: o.display is not None, self.get_all_outputs()))
-        edids = self._get_edids()
+        edids = self._get_verbose_fields('EDID')
         for o in outputs:
             o.display.edid = edids[o.name]
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("Connected outputs: %s", list(map(lambda o: o.name, outputs)))
         return outputs
 
-    def _get_edids(self):
+    def _get_verbose_fields(self, field):
         """
-        Get EDIDs of all connected displays.
-        Return dictionary of {"connection_name": "edid"}
+        Get particular field of all connected displays.
+        Return dictionary of {"connection_name": field_value}
         """
-        edids = dict()
+        ret = dict()
 
-        p = self._xrandr([self.QUERY_KEY, self.VERBOSE_KEY])
-        query_result = p.stdout.readlines()
-        query_result.pop(0)  # remove first line
-
-        items = self._group_query_result(map(lambda x: x.decode(), query_result))
-
+        items = self._xrandr(self.QUERY_KEY, self.VERBOSE_KEY)
+        items = self._group_query_result(items)
         items = filter(lambda x: x[0].find(' connected') > 0, items)
 
         for i in items:
             name_idx = i[0].find(' ')
             name = i[0][:name_idx]
-            edids[name] = self._edid_from_query_item(i)
+            ret[name] = self._field_from_query_item(i, field)
 
-        return edids
+        return ret
 
-    def _edid_from_query_item(self, item_lines: list):
+    def _field_from_query_item(self, item_lines: list, field: str):
         """
-        Extracts display EDID from xrandr --verbose output
+        Extracts display field from xrandr --verbose output
         """
-        edid_start = 0
+        val = ''
+        indent = ''
+        in_field = False
+        lines_collected = 0
         for i, line in enumerate(item_lines):
-            if line.find('EDID:') >= 0:
-                edid_start = i + 1
-                break
-        edid_lines = map(lambda x: x.strip(), item_lines[edid_start:edid_start + 8])
-        edid = ''.join(edid_lines)
-        return edid
+            m = re.match(r'(\s+)(.*):\s*(.*)$', line)
+            if m and m.group(2).lower() == field.lower():
+                indent = m.group(1)
+                in_field = True
+                val = m.group(3).strip()
+            elif in_field and m and (len(indent) >= len(m.group(1)) or m.group(1) == indent):
+                return val
+            elif in_field and not line.startswith(indent):
+                return val
+            elif in_field:
+                val += line.strip()
+                lines_collected += 1
+                if field == 'EDID' and lines_collected >= 8:
+                    return val
+
+        return val
 
     def _parse_xrandr_connection(self, item_lines: list):
         """

@@ -41,11 +41,12 @@ class XrandrConnection:
     Connection between a graphic adapter output and a display with assigned viewport
     """
 
-    def __init__(self, name: str, display: Display=None, current_geometry: Viewport=None, primary: bool=False):
+    def __init__(self, name: str, display: Display=None, current_geometry: Viewport=None, primary: bool=False, crtc: int=None):
         self.name = name
         self.display = display
         self.viewport = current_geometry
         self.primary = primary
+        self.crtc = crtc
 
     def is_active(self):
         return self.viewport is not None
@@ -55,7 +56,7 @@ class XrandrConnection:
 
 
 class Profile:
-    def __init__(self, name, outputs: list, rules: dict=None, primary: str=None):
+    def __init__(self, name, outputs: list, rules: dict=None, primary: str=None, priority: int=100):
         """
         :param name: name of the profile
         :param outputs: list of Output objects (i.e. settings to apply for each output)
@@ -69,6 +70,7 @@ class Profile:
         self.outputs = outputs
         self.rules = rules
         self.primary = primary
+        self.priority = priority
 
     def __repr__(self):
         return self.name + str(self.outputs)
@@ -102,7 +104,7 @@ class Output:
     """
 
     def __init__(self, name: str, mode: str, pos: str="0x0", rotate: str="normal", panning: str="0x0",
-                 scale: str="1x1", rate: int=None):
+                 scale: str="1x1", rate: int=None, crtc: int=None):
         self.name = name
         self.mode = mode
         self.pos = pos
@@ -110,6 +112,7 @@ class Output:
         self.panning = panning
         self.scale = scale
         self.rate = rate
+        self.crtc = crtc
 
     def todict(self):
         d = {
@@ -118,9 +121,10 @@ class Output:
             'rotate': self.rotate,
             'panning': self.panning,
             'scale': self.scale,
-            'rate': self.rate
+            'rate': self.rate,
+            'crtc': self.crtc
         }
-        return dict((k, v) for k, v in d.items() if v)
+        return dict((k, v) for k, v in d.items() if v is not None)
 
     @staticmethod
     def fromconnection(connection: XrandrConnection):
@@ -130,7 +134,8 @@ class Output:
                       connection.viewport.rotate,
                       connection.viewport.panning,
                       connection.viewport.scale,
-                      connection.display.rate)
+                      connection.display.rate,
+                      connection.crtc)
 
     def __repr__(self):
         return "{0}{{{1}}}".format(self.name, self.mode)

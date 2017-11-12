@@ -65,6 +65,7 @@ class Test_ProfileManager(TestCase):
             self.maxDiff = None
             self.assertDictEqual(
                 {'primary': 'LVDS1',
+                 'priority': 100,
                  'match': {'LVDS1': {},
                            'DP1': {'edid': "d8578edf8458ce06fbc5bb76a58c5ca4",
                                    'supports': "1920x1080",
@@ -85,6 +86,7 @@ class Test_ProfileManager(TestCase):
             self.maxDiff = None
             self.assertDictEqual(
                 {'primary': 'LVDS1',
+                 'priority': 100,
                  'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0",
                                      'scale': "1x1"},
                              'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0",
@@ -101,6 +103,7 @@ class Test_ProfileManager(TestCase):
             self.maxDiff = None
             self.assertDictEqual(
                 {'primary': 'LVDS1',
+                 'priority': 100,
                  'match': {'LVDS1': {},
                            'DP1': {'supports': "1920x1080", 'prefers': "1920x1200"}},
                  'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0",
@@ -149,13 +152,13 @@ class Test_ProfileMatcher(TestCase):
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[0], best)
 
-    def test_find_best_no_match(self):
+    def test_find_best_default2(self):
         outputs = [
             XrandrConnection("LVDS1", Display()),
             XrandrConnection("DP1", Display(["1280x1024"], edid="guest"))
         ]
         best = self.matcher.find_best(self.profiles, outputs)
-        self.assertIsNone(best)
+        self.assertEqual(self.profiles[0], best)
 
     def test_find_best_edid_over_mode(self):
         outputs = [
@@ -180,6 +183,28 @@ class Test_ProfileMatcher(TestCase):
         ]
         best = self.matcher.find_best(self.profiles, outputs)
         self.assertEqual(self.profiles[1], best)
+
+    def test_priority(self):
+        outputs_default = [
+            XrandrConnection("LVDS1", Display()),
+        ]
+        outputs_office = [
+            XrandrConnection("LVDS1", Display()),
+            XrandrConnection("HDMI1", Display(["1920x1080"], edid="office"))
+        ]
+        profiles = [
+            Profile("default", [
+                Output("LVDS1", "1366x768")
+            ], {"LVDS1": Rule()}, priority=50),
+            Profile("office", [
+                Output("HDMI1", "1920x1080")
+            ], {"HDMI1": Rule()}, priority=100)     # default priority
+        ]
+        best_default = self.matcher.find_best(profiles, outputs_default)
+        best_office = self.matcher.find_best(profiles, outputs_office)
+        self.assertEqual(profiles[0], best_default)
+        self.assertEqual(profiles[1], best_office)
+
 
     def test_find_best_ambiguous(self):
         """
