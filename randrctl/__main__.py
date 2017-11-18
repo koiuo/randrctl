@@ -54,6 +54,8 @@ class Main:
 
         # show
         command_show = commands_parsers.add_parser(SHOW, help='show profile')
+        command_show.add_argument('-j', '--json', action='store_const', const=True, default=False,
+                                  help='use JSON-compatible format', dest='json')
         command_show.add_argument('profile_name', help='name of the profile to show. Show current setup if omitted',
                                   default=None, nargs='?')
 
@@ -73,6 +75,8 @@ class Main:
                                   help='dump with match by edid', dest='match_edid')
         command_dump.add_argument('-P', action='store', type=int, default=100, dest='priority',
                                   help='profile priority')
+        command_dump.add_argument('-j', '--json', action='store_const', const=True, default=False,
+                                  help='use JSON-compatible format', dest='json')
         command_dump.add_argument('profile_name', help='name of the profile to dump setup to')
 
         # auto
@@ -131,9 +135,9 @@ class Main:
 
     def show(self, args: argparse.Namespace):
         if args.profile_name:
-            self.randrctl.print(args.profile_name)
+            self.randrctl.print(args.profile_name, json_compatible=args.json)
         else:
-            self.randrctl.dump_current('current')
+            self.randrctl.dump_current('current', json_compatible=args.json)
 
     def dump(self, args: argparse.Namespace):
         self.randrctl.dump_current(name=args.profile_name, to_file=True,
@@ -141,7 +145,8 @@ class Main:
                                    include_preferred_rule=args.match_preferred,
                                    include_edid_rule=args.match_edid,
                                    include_refresh_rate=args.match_edid,
-                                   priority=args.priority)
+                                   priority=args.priority,
+                                   json_compatible=args.json)
 
     def auto(self, args: argparse.Namespace):
         self.randrctl.switch_auto()

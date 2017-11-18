@@ -46,7 +46,8 @@ class RandrCtl:
                      include_preferred_rule: bool=True,
                      include_edid_rule: bool=True,
                      include_refresh_rate: bool=True,
-                     priority: int=100):
+                     priority: int=100,
+                     json_compatible: bool=False):
         """
         Dump current profile under specified name. Only xrandr settings are dumped
         """
@@ -71,16 +72,16 @@ class RandrCtl:
                 output.rate = None
 
         if to_file:
-            self.profile_manager.write(profile)
+            self.profile_manager.write(profile, yaml_flow_style=json_compatible)
         else:
-            self.profile_manager.print(profile)
+            self.profile_manager.print(profile, yaml_flow_style=json_compatible)
 
-    def print(self, name: str):
+    def print(self, name: str, json_compatible: bool=False):
         """
         Print specified profile to stdout
         """
         p = self.profile_manager.read_one(name)
-        self.profile_manager.print(p)
+        self.profile_manager.print(p, yaml_flow_style=json_compatible)
 
     def list_all(self):
         """

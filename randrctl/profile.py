@@ -87,7 +87,7 @@ class ProfileManager:
         except (KeyError, ValueError):
             raise InvalidProfileException(profile_file_descriptor.name)
 
-    def write(self, p: Profile):
+    def write(self, p: Profile, yaml_flow_style: bool=False):
         """
         Write profile to file into configured profile directory.
         Profile name becomes the name of the file. If name contains illegal characters, only safe part is used.
@@ -99,11 +99,11 @@ class ProfileManager:
         if safename != p.name:
             logger.warning("Illegal name provided. Writing as %s", fullname)
         with open(fullname, 'w+') as fp:
-            yaml.dump(dict, fp, default_flow_style=False)
+            yaml.dump(dict, fp, default_flow_style=yaml_flow_style)
 
-    def print(self, p: Profile):
+    def print(self, p: Profile, yaml_flow_style: bool=False):
         dict = self.to_dict(p)
-        print(yaml.dump(dict, default_flow_style=False))
+        print(yaml.dump(dict, default_flow_style=yaml_flow_style))
 
     def to_dict(self, p: Profile):
         outputs = {}
