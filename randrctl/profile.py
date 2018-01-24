@@ -159,9 +159,6 @@ class ProfileMatcher:
 
         logger.debug("%d/%d profiles match outputs sets", len(profiles), len(available_profiles))
 
-        if len(profiles) == 0:
-            return None
-
         matching = []
         for p in profiles:
             score = self._calculate_profile_score(p, xrandr_outputs)
@@ -172,20 +169,17 @@ class ProfileMatcher:
 
     def find_best(self, available_profiles: list, xrandr_outputs: list):
         """
-        find first matching profile across availableprofiles for actualconnections
+        Find first matching profile across availableProfiles for actualConnections
         """
         matching = self.match(available_profiles, xrandr_outputs)
-        max_score = max([s[0] for s in matching])
-        matching = list([m[1] for m in matching if m[0] == max_score])
 
-        if len(matching) > 0:
-            logger.debug("Found %d profiles with maximum score %d", len(matching), max_score)
-            matching.sort(key=lambda x: x.priority, reverse=True)
-            p = matching[0]
-            logger.debug("Selected profile %s with score %d and priority %d", p.name, max_score, p.priority)
-            return p
-        else:
+        if not matching:
             return None
+
+        max_score, p = matching[0]
+        logger.debug("Found %d profiles with maximum score %d", len(matching), max_score)
+        logger.debug("Selected profile %s with score %d and priority %d", p.name, max_score, p.priority)
+        return p
 
     def _calculate_profile_score(self, p: Profile, xrandr_outputs: list):
         """
