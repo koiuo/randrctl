@@ -63,6 +63,8 @@ class Main:
         command_list = commands_parsers.add_parser(LIST, help='list available profiles')
         command_list.add_argument('-l', action='store_const', const=True, default=False,
                                   help='long listing', dest='long_listing')
+        command_list.add_argument('-s', action='store_const', const=True, default=False,
+                                  help='scored listing', dest='scored_listing')
 
         # dump
         command_dump = commands_parsers.add_parser(DUMP,
@@ -127,6 +129,8 @@ class Main:
     def list(self, args: argparse.Namespace):
         if args.long_listing:
             self.randrctl.list_all_long()
+        elif args.scored_listing:
+            self.randrctl.list_all_scored()
         else:
             self.randrctl.list_all()
 
