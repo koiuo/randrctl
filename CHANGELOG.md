@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- `list -s` to print only matching profiles with their scores [#8](https://github.com/edio/randrctl/pull/8)
+
 ### Fixed
 
 - Bug where profiles without `match` section were considered for auto-matching

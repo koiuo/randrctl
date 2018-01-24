@@ -167,7 +167,6 @@ class ProfileMatcher:
                 matching.append((score, p))
         return sorted(matching, key=lambda x: (x[0], x[1].priority), reverse=True)
 
-
     def find_best(self, available_profiles: list, xrandr_outputs: list):
         """
         Find first matching profile across availableProfiles for actualConnections
