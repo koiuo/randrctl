@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Bug where profiles without `match` section were considered for auto-matching
+
 ## 1.4.0 - 2017-11-18
 
 ### Added

@@ -1,17 +1,15 @@
-import hashlib
 import logging
 import os
 from unittest import TestCase
 
-from randrctl import profile
 from randrctl.model import Profile, Rule, Viewport, Output, XrandrConnection, Display
-from randrctl.profile import ProfileManager, ProfileMatcher
+from randrctl.profile import ProfileManager, ProfileMatcher, hash
 
 __author__ = 'edio'
 
 
 class Test_ProfileManager(TestCase):
-    manager = ProfileManager(".")
+    manager = ProfileManager(["."])
 
     TEST_PROFILE_FILE = os.path.join(os.path.dirname(__file__), 'profile_example')
     TEST_SIMPLE_PROFILE_FILE = os.path.join(os.path.dirname(__file__), 'simple_profile_example')
@@ -119,112 +117,116 @@ class Test_ProfileMatcher(TestCase):
 
     matcher = ProfileMatcher()
 
-    HOME_MD5 = hashlib.md5("home".encode()).hexdigest()
-    OFFICE_MD5 = hashlib.md5("office".encode()).hexdigest()
-
-    profiles = [
-        Profile("default", [
-            Output("LVDS1", "1366x768")
-        ], {"LVDS1": Rule()}),
-        Profile("DP1_1920x1080", [
-            Output("LVDS1", "1366x768"),
-            Output("DP1", "1920x1080")
-        ], {"LVDS1": Rule(), "DP1": Rule(None, None, "1920x1080")}),
-        Profile("DP1_1920x1200", [
-            Output("LVDS1", "1366x768"),
-            Output("DP1", "1920x1200")
-        ], {"LVDS1": Rule(), "DP1": Rule(None, "1920x1200", None)}),
-        Profile("home", [
-            Output("LVDS1", "1366x768"),
-            Output("DP1", "1920x1080")
-        ], {"LVDS1": Rule(), "DP1": Rule(HOME_MD5)}),
-        Profile("no_rule", [Output("LVDS1", "800x600")]),
-        Profile("office", [
-            Output("LVDS1", "1366x768"),
-            Output("HDMI1", "1920x1080")
-        ], {"LVDS1": Rule(), "HDMI1": Rule(OFFICE_MD5)})
-    ]
-
-    def test_find_best_default(self):
-        outputs = [
-            XrandrConnection("LVDS1", Display())
-        ]
-        best = self.matcher.find_best(self.profiles, outputs)
-        self.assertEqual(self.profiles[0], best)
-
-    def test_find_best_default2(self):
-        outputs = [
-            XrandrConnection("LVDS1", Display()),
-            XrandrConnection("DP1", Display(["1280x1024"], edid="guest"))
-        ]
-        best = self.matcher.find_best(self.profiles, outputs)
-        self.assertEqual(self.profiles[0], best)
-
-    def test_find_best_edid_over_mode(self):
-        outputs = [
-            XrandrConnection("LVDS1", Display()),
-            XrandrConnection("DP1", Display(["1920x1080"], edid="home"))
-        ]
-        best = self.matcher.find_best(self.profiles, outputs)
-        self.assertEqual(self.profiles[3], best)
-
-    def test_find_best_prefers_over_supports(self):
-        outputs = [
-            XrandrConnection("LVDS1", Display()),
-            XrandrConnection("DP1", Display(["1920x1080", "1920x1200"], "1920x1200", edid="office"))
-        ]
-        best = self.matcher.find_best(self.profiles, outputs)
-        self.assertEqual(self.profiles[2], best)
-
-    def test_find_best_mode(self):
-        outputs = [
-            XrandrConnection("LVDS1", Display()),
-            XrandrConnection("DP1", Display(["1920x1080"], edid="office"))
-        ]
-        best = self.matcher.find_best(self.profiles, outputs)
-        self.assertEqual(self.profiles[1], best)
-
-    def test_priority(self):
-        outputs_default = [
-            XrandrConnection("LVDS1", Display()),
-        ]
-        outputs_office = [
-            XrandrConnection("LVDS1", Display()),
-            XrandrConnection("HDMI1", Display(["1920x1080"], edid="office"))
-        ]
+    def test_should_match_profile_with_empty_rule(self):
+        # given
+        expected = profile("should_match", {"LVDS1": Rule()})
         profiles = [
-            Profile("default", [
-                Output("LVDS1", "1366x768")
-            ], {"LVDS1": Rule()}, priority=50),
-            Profile("office", [
-                Output("HDMI1", "1920x1080")
-            ], {"HDMI1": Rule()}, priority=100)     # default priority
+            profile("different_output_in_rule", {"DP1": Rule(prefers="1920x1080")}),
+            profile("no_rules"),
+            expected
         ]
-        best_default = self.matcher.find_best(profiles, outputs_default)
-        best_office = self.matcher.find_best(profiles, outputs_office)
-        self.assertEqual(profiles[0], best_default)
-        self.assertEqual(profiles[1], best_office)
+        outputs = [
+            XrandrConnection("LVDS1", Display(preferred_mode="1920x1080"))
+        ]
 
+        # when
+        best = self.matcher.find_best(profiles, outputs)
 
-    def test_find_best_ambiguous(self):
-        """
-        Test matching for similarly scored profiles
-        """
+        # then
+        self.assertEqual(expected, best)
+
+    def test_should_not_match_profile_without_rules(self):
+        # given
+        profiles = [
+            profile("no_rules1"),
+            profile("no_rules2"),
+            profile("no_rules3")
+        ]
+        outputs = [
+            XrandrConnection("LVDS1", Display(preferred_mode="1920x1080"))
+        ]
+
+        # when
+        best = self.matcher.find_best(profiles, outputs)
+
+        # then
+        self.assertIsNone(best)
+
+    def test_should_prefer_edid_over_mode(self):
+        # given
+        edid = "some_edid"
+        expected = profile("with_edid", {"LVDS1": Rule(hash(edid))})
+        profiles = [
+            expected,
+            profile("with_supported_mode", {"LVDS1": Rule(supports="1920x1080")}),
+            profile("with_preferred_mode", {"LVDS1": Rule(prefers="1920x1080")})
+        ]
+        outputs = [
+            XrandrConnection("LVDS1", Display(["1920x1080"], "1920x1080", edid=edid))
+        ]
+
+        # when
+        best = self.matcher.find_best(profiles, outputs)
+
+        # then
+        self.assertEqual(expected, best)
+
+    def test_should_prefer_rule_prefers_over_supports(self):
+        # given
+        expected = profile("with_prefers", {"LVDS1": Rule(prefers="1920x1080")})
+        profiles = [
+            expected,
+            profile("with_supports", {"LVDS1": Rule(supports="1920x1080")})
+        ]
+        outputs = [
+            XrandrConnection("LVDS1", Display(["1920x1080"], "1920x1080"))
+        ]
+
+        # when
+        best = self.matcher.find_best(profiles, outputs)
+
+        # then
+        self.assertEqual(expected, best)
+
+    # TODO use-case of this is frankly not clear. We can set priority by file name. Clarify
+    def test_should_pick_profile_with_higher_prio_if_same_score(self):
+        # given
+        expected = profile("highprio", {"LVDS1": Rule()}, prio=999)
+        profiles = [
+            profile("default", {"LVDS1": Rule()}),
+            expected
+        ]
+        outputs = [
+            XrandrConnection("LVDS1", Display()),
+        ]
+
+        # when
+        best = self.matcher.find_best(profiles, outputs)
+
+        # then
+        self.assertEqual(expected, best)
+
+    def test_should_pick_first_profile_if_same_score(self):
+        # given
         edid = "office"
-        edidhash = profile.md5(edid)
-
-        connected_outputs = [
+        edidhash = hash(edid)
+        profiles = [
+            profile("p1", {"LVDS1": Rule(), "DP1": Rule(edidhash)}),
+            profile("p2", {"LVDS1": Rule(), "DP1": Rule(edidhash)})
+        ]
+        outputs = [
             XrandrConnection("LVDS1", Display()),
             XrandrConnection("DP1", Display(["1920x1080"], edid=edid))
         ]
 
-        profile_outputs = [
-            Output("LVDS1", Viewport('1366x768'), True),
-            Output("DP1", Viewport('1920x1080'))
-        ]
+        # when
+        best = self.matcher.find_best(profiles, outputs)
 
-        p1 = Profile("p1", profile_outputs, {"LVDS1": Rule(), "DP1": Rule(edidhash)})
-        p2 = Profile("p2", profile_outputs, {"LVDS1": Rule(), "DP1": Rule(edidhash)})
+        # then
+        self.assertEqual(profiles[0], best)
 
-        best = self.matcher.find_best([p1, p2], connected_outputs)
-        self.assertEqual(p1, best)
+
+def profile(name: str, rules: dict = None, prio: int = 100):
+    # we do not care about actual outputs in these tests, only rules matters
+    return Profile(name, [], rules, priority=prio)
+

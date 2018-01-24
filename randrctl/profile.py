@@ -9,7 +9,7 @@ from randrctl.model import Profile, Rule, Output, XrandrConnection
 logger = logging.getLogger(__name__)
 
 
-def md5(string: str):
+def hash(string: str):
     if string:
         return hashlib.md5(string.encode()).hexdigest()
     else:
@@ -135,7 +135,7 @@ class ProfileManager:
             if c.primary:
                 primary = c.name
             outputs.append(output)
-            rule = Rule(md5(display.edid), display.preferred_mode, display.mode)
+            rule = Rule(hash(display.edid), display.preferred_mode, display.mode)
             rules[c.name] = rule
 
         logger.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
@@ -154,8 +154,9 @@ class ProfileMatcher:
         output_names = set(map(lambda o: o.name, xrandr_outputs))
 
         # remove those with disconnected outputs
-        profiles = filter(lambda p: len(set(p.rules) - output_names) == 0, available_profiles)
-        profiles = list(profiles)
+        with_rules = filter(lambda p: len(p.rules) > 0, available_profiles)
+        with_rules_covering_outputs = filter(lambda p: len(set(p.rules) - output_names) == 0, with_rules)
+        profiles = list(with_rules_covering_outputs)
 
         logger.debug("%d/%d profiles match outputs sets", len(profiles), len(available_profiles))
 
@@ -201,15 +202,13 @@ class ProfileMatcher:
 
     def _score_rule(self, rule: Rule, xrandr_output: XrandrConnection):
         """
-        0 if match is not needed by a criterion (i.e. edid is not set, mode is not set)
-        1 if matches by supported mode
-        2 if matches by preferred mode
-        3 if matches by edid
-        returns sum of scores, -1 if doesn't match
+        Starting rule score is 0 (a rule without any additional criteria for a connection still triggers auto-matching).
+        Criteria, if defined, are checked and resulting rule score increases with every matched criterion.
+        If any of the defined criteria fails to match, -1 is immediately returned.
         """
         score = 0
         if rule.edid:
-            if rule.edid == md5(xrandr_output.display.edid):
+            if rule.edid == hash(xrandr_output.display.edid):
                 score += 3
             else:
                 return -1
