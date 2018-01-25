@@ -225,6 +225,35 @@ class Test_ProfileMatcher(TestCase):
         # then
         self.assertEqual(profiles[0], best)
 
+    def test_should_match_profiles_and_list_descending(self):
+        # given
+        edid = "office"
+        edidhash = hash(edid)
+        profiles = [
+            profile("match4", {"LVDS1": Rule(), "DP1": Rule()}),
+            profile("match1", {"LVDS1": Rule(), "DP1": Rule(edidhash)}),
+            profile("match3", {"LVDS1": Rule(), "DP1": Rule(supports="1920x1080")}),
+            profile("match2", {"LVDS1": Rule(), "DP1": Rule(prefers="1920x1080")}),
+            profile("match5", {"LVDS1": Rule()}),
+            profile("missing_output", {"LVDS1": Rule(), "DP1": Rule(), "HDMI1": Rule()}),
+            profile("no_rules")
+        ]
+        outputs = [
+            XrandrConnection("LVDS1", Display()),
+            XrandrConnection("DP1", Display(["1920x1080"], "1920x1080", edid=edid))
+        ]
+
+        # when
+        matches = self.matcher.match(profiles, outputs)
+
+        # then
+        self.assertEqual(5, len(matches))
+        self.assertEqual("match1", matches[0][1].name)
+        self.assertEqual("match2", matches[1][1].name)
+        self.assertEqual("match3", matches[2][1].name)
+        self.assertEqual("match4", matches[3][1].name)
+        self.assertEqual("match5", matches[4][1].name)
+
 
 def profile(name: str, rules: dict = None, prio: int = 100):
     # we do not care about actual outputs in these tests, only rules matters
