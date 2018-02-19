@@ -36,7 +36,7 @@ class ProfileManager:
                         with open(path) as profile_file:
                             profiles.append(self.read_file(profile_file))
                     except InvalidProfileException as e:
-                        logger.warn(e)
+                        logger.warning(e)
         return profiles
 
     def read_one(self, profile_name: str):
@@ -66,7 +66,7 @@ class ProfileManager:
                 for k, v in rules.items():
                     # backward compatibility for match.mode
                     if v.get('mode'):
-                        logger.warn("%s\n\tmatch.mode is deprecated"
+                        logger.warning("%s\n\tmatch.mode is deprecated"
                                     "\n\tConsider changing to 'supports' or 'prefers'", profile_file_descriptor.name)
                         v['supports'] = v['mode']
                         del v['mode']

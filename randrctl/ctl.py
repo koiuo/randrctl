@@ -39,7 +39,7 @@ class RandrCtl:
         if matching is not None:
             self.xrandr.apply(matching)
         else:
-            logger.warn("No matching profile found")
+            logger.warning("No matching profile found")
 
     def dump_current(self, name: str, to_file: bool=False,
                      include_supports_rule: bool=True,
@@ -150,7 +150,7 @@ class Hook:
                 logger.debug("Calling '%s'", hook)
                 subprocess.Popen(hook, env=env, shell=True)
             except Exception as e:
-                logger.warn("Error while executing hook '%s': %s", hook, str(e))
+                logger.warning("Error while executing hook '%s': %s", hook, str(e))
 
 
 class CtlFactory:
@@ -172,11 +172,11 @@ class CtlFactory:
         valid_homes = list(filter(self.is_valid_home, self.homes))
 
         if len(valid_homes) == 0:
-            logger.warn("No home directories found among %s", self.homes)
+            logger.warning("No home directories found among %s", self.homes)
             self.init_home(self.preferred_home)
             valid_homes = [self.preferred_home]
         elif valid_homes.count(self.preferred_home) == 0:
-            logger.warn("No home directory found under preferred location %s", self.preferred_home)
+            logger.warning("No home directory found under preferred location %s", self.preferred_home)
 
         self.homes = valid_homes
         logger.info("Using %s as home directories", self.homes)
@@ -214,7 +214,7 @@ class CtlFactory:
         return os.path.isdir(profiles)
 
     def init_home(self, home_dir: str):
-        logger.warn("Creating home under %s", home_dir)
+        logger.warning("Creating home under %s", home_dir)
         config = os.path.join(home_dir, self.config_name)
         profiles = os.path.join(home_dir, self.profile_dir)
         os.makedirs(profiles, exist_ok=True)
