@@ -1,4 +1,4 @@
-from configparser import ConfigParser
+import yaml
 import os
 import logging
 import subprocess
@@ -158,7 +158,7 @@ class CtlFactory:
     Parses config and creates appropriate Randrctl object
     """
 
-    config_name = "config.ini"
+    config_name = "config.yaml"
     profile_dir = "profiles"
 
     def __init__(self, homes: list):
@@ -181,15 +181,15 @@ class CtlFactory:
         self.homes = valid_homes
         logger.info("Using %s as home directories", self.homes)
 
-    def _config_safe(self, config: ConfigParser, section: str, property: str):
+    def _config_safe(self, config: dict, section: str, property: str):
         """
         read property from config safely
-        :param config: ConfigParser instance
+        :param config: config dictionary
         :param section: section name to read
         :param property: property name to read
         :return: property value or None
         """
-        return config.get(section, property) if config.has_option(section, property) else None
+        return config.get(section).get(property) if section in config else None
 
     def _configs(self):
         """
@@ -201,12 +201,21 @@ class CtlFactory:
                 yield config
 
     def get_randrctl(self):
-        config = ConfigParser(allow_no_value=True, strict=False)
-
         config_files = list(self._configs())
         config_files.reverse()  # reverse, so config file from the preferred home comes last (has highest precedence)
-        read = config.read(config_files)
-        logger.debug("read configuration from %s", read)
+
+        # Empty container to hold the configuration
+        config = {}
+        # Iterate over the list of config files
+        for config_file in config_files:
+            with open(config_file, 'r') as stream:
+                try:
+                    # Try to parse the YAML file  and update the configuration dictionary
+                    config.update(yaml.load(stream))
+                except yaml.YAMLError as e:
+                    logger.error("error reading configuration file %s", config_file)
+                else:
+                    logger.debug("read configuration from %s", config_file)
 
         # profile manager
         profile_paths = list(map(lambda x: os.path.join(x, self.profile_dir), self.homes))
