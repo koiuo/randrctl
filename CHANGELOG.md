@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- support for configs in yaml format (#11)
+
+### Changed
+
+- configs in INI format are now deprecated (#11)
+
+### Fixed
+
+- overwriting existing config when there are no profiles (#9)
+
 ## 1.5.0 - 2018-01-24
 
 ### Added
