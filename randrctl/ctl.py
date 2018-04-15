@@ -1,4 +1,5 @@
 from configparser import ConfigParser
+from yaml import load, YAMLError
 import os
 import logging
 import subprocess
@@ -158,8 +159,11 @@ class CtlFactory:
     Parses config and creates appropriate Randrctl object
     """
 
-    config_name = "config.ini"
+    config_name = ["config.yaml", "config.ini"]
     profile_dir = "profiles"
+
+    PREFERRED = 'preferred'
+    OTHER = 'other'
 
     def __init__(self, homes: list):
         """
@@ -181,32 +185,93 @@ class CtlFactory:
         self.homes = valid_homes
         logger.info("Using %s as home directories", self.homes)
 
-    def _config_safe(self, config: ConfigParser, section: str, property: str):
+    def _config_safe(self, config: dict, section: str, property: str):
         """
         read property from config safely
-        :param config: ConfigParser instance
+        :param config: config dictionary
         :param section: section name to read
         :param property: property name to read
         :return: property value or None
         """
-        return config.get(section, property) if config.has_option(section, property) else None
+        return config.get(section).get(property) if section in config else None
 
     def _configs(self):
         """
-        :return: generator of config files in defined home directories if exist
+        :return: dictionary of config files in defined home directories if exist
         """
+        # Empty container to hold the configs
+        configs = {}
         for homedir in self.homes:
-            config = os.path.join(homedir, self.config_name)
-            if os.path.isfile(config):
-                yield config
+            # Configs will be either user's (prefered) or system-wide (other)
+            config_group = self.PREFERRED if homedir == self.preferred_home else self.OTHER
+            # Create new entry
+            configs[config_group] = []
+            # Load both YAML and INI config files
+            for config_format in self.config_name:
+              config = os.path.join(homedir, config_format)
+              if os.path.isfile(config):
+                  configs[config_group].append(config)
+
+        # Return dictionary with the configuration files
+        return configs
+
+    def _load_config_files(self):
+        """
+        :return: dictionary of configurations loaded from config files
+        """
+        # Get config file paths
+        config_files = self._configs()
+
+        # If available, use preferred configs, otherwise use the others
+        use = self.PREFERRED if config_files.get(self.PREFERRED) else self.OTHER
+
+        # Fetch list of yaml files
+        yaml_files = [config_file for config_file in config_files[use] if config_file.endswith('yaml')]
+        # Fetch list of ini files
+        ini_files = [config_file for config_file in config_files[use] if config_file.endswith('ini')]
+
+        # Empty container to hold the configuration
+        config = {}
+
+        if yaml_files:
+          with open(yaml_files[0], 'r') as stream:
+            # Try to parse the YAML file  and update the configuration dictionary
+            try:
+              config.update(load(stream))
+            except YAMLError as e:
+              logger.warning("error reading configuration file %s", yaml_files[0])
+            else:
+              logger.debug("read configuration from %s", yaml_files[0])
+
+        elif ini_files:
+          # Warning message indicating deprecation
+          logger.warning(
+            "INI configuration is deprecated and will be removed in next minor release\n" +
+            "Please convert %s to yaml format\n" +
+            "Visit https://github.com/edio/randrctl#priorpost-hooks for details", ini_files[0]) 
+
+
+          # Instantiate config parser
+          config_parser = ConfigParser(allow_no_value=True, strict=False)
+
+          # Try to read the config files
+          try:
+            read = config_parser.read(ini_files[0])
+          except Exception as e:
+            logger.warning("error reading configuration files")
+          else:
+            config = {section: dict(config_parser.items(section)) for section in config_parser.sections()}
+            logger.debug("read configuration from %s", ini_files[0])
+
+        # Otherwise, there are no configuration files whatsoever
+        else:
+          logger.debug("there are no configuration files available")
+
+        return config
 
     def get_randrctl(self):
-        config = ConfigParser(allow_no_value=True, strict=False)
-
-        config_files = list(self._configs())
-        config_files.reverse()  # reverse, so config file from the preferred home comes last (has highest precedence)
-        read = config.read(config_files)
-        logger.debug("read configuration from %s", read)
+        # Load configuration files as a dictionary
+        config = self._load_config_files()
 
         # profile manager
         profile_paths = list(map(lambda x: os.path.join(x, self.profile_dir), self.homes))
