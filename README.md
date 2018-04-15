@@ -76,13 +76,13 @@ during auto-switching.
 ## Prior/Post hooks
 
 randrctl can execute custom commands (hooks) before and after switching to profile or if switching fails. Hooks are
-specified in config file `$XDG_CONFIG_HOME/randrctl/config.ini`
+specified in config file `$XDG_CONFIG_HOME/randrctl/config.yaml`
 
 ```
-[hooks]
-prior_switch = /usr/bin/killall -SIGSTOP i3
-post_switch = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u low "randrctl" "switched to $randr_profile"
-post_fail = /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u critical "randrctl error" "$randr_error"
+hooks:
+    prior_switch: /usr/bin/killall -SIGSTOP i3
+    post_switch: /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u low "randrctl" "switched to $randr_profile"
+    post_fail: /usr/bin/killall -SIGCONT i3 && /usr/bin/notify-send -u critical "randrctl error" "$randr_error"
 ```
 
 The typical use-case of this is displaying desktop notification with libnotify.
@@ -92,32 +92,23 @@ I also use it to pause i3 window manager as it was known to crash sometimes duri
 
 ## Profile format
 
-Profile is a simple text file in JSON format. It can be edited manually, however it is rarely required in practice
+Profile is a simple text file in YAML format. It can be edited manually, however it is rarely required in practice
 because `randrctl dump` handles most common cases.
 
-As in usual JSON all values are case-sensitive, white-spaces don't matter.
-
 ```
-{
-  "match": {
-    "LVDS1": {},
-    "DP1": {
-        "prefers": "1920x1080"
-    }
-  },
-  "outputs": {
-    "LVDS1": {
-      "mode": "1366x768",
-      "panning": "1366x1080
-    },
-    "DP1": {
-      "mode": "1920x1080",
-      "pos": "1366x0",
-      "rotate": "inverted"
-    }
-  },
-  "primary": "DP1"
-}
+match:
+    LVDS1: {}
+    DP1:
+        prefers: 1920x1080
+outputs:
+    LVDS1:
+        mode: 1366x768
+        panning: 1366x1080
+    DP1:
+        mode: 1920x1080
+        pos: 1366x0
+        rotate: inverted
+primary: DP1
 ```
 
 Profile is required to contain 2 sections (`outputs` and `primary`). That is what dumped when `randrctl dump` is invoked
@@ -134,14 +125,13 @@ properties is the same as in the xrandr utility.
 `mode` is mandatory, the others may be omitted.
 
 ```
-"DP1-2": {
-    "mode": "1920x1200",
-    "panning": "2496x1560+1920+0",
-    "pos": "1920x0",
-    "rate": 60,
-    "rotate": "normal",
-    "scale": "1.3x1.3"
-},
+DP1-2: 
+    mode: 1920x1200
+    panning: 2496x1560+1920+0
+    pos: 1920x0
+    rate: 60
+    rotate: normal
+    scale: 1.3x1.3
 ```
 
 
@@ -150,7 +140,7 @@ properties is the same as in the xrandr utility.
 Name of the primary output as seen in xrandr.
 
 ```
-"primary": "eDP1"
+primary: eDP1
 ```
 
 ### Match
@@ -160,7 +150,7 @@ Set of rules for auto-switching.
 The minimum rule is
 
 ```
-"HDMI1": {}
+HDMI1: {}
 ```
 
 which means, that something must be connected to that output.
@@ -168,25 +158,22 @@ which means, that something must be connected to that output.
 Rule corresponding to `randrctl dump -m` would be
 
 ```
-"HDMI1": {
-    "supports": "1920x1080"
-}
+HDMI1:
+    supports: 1920x1080
 ```
 
 `randrctl dump -p` is
 
 ```
-"HDMI1": {
-    "prefers": "1920x1080"
-}
+HDMI1:
+    prefers: 1920x1080
 ```
 
 and `randrctl dump -e` is
 
 ```
-"HDMI1": {
-    "edid": "efdbca373951c898c5775e1c9d26c77f"
-}
+HDMI1:
+    edid: efdbca373951c898c5775e1c9d26c77f
 ```
 
 `edid` is md5 hash of actual display's `edid`. To obtain that value, use `randrctl show`.
@@ -195,71 +182,40 @@ As was mentioned, `prefers`, `supports` and `edid` can be combined in the same r
 create a more sophisticated rule
 
 ```
-{
-  "match": {
-    "LVDS1": {},
-    "HDMI1": {
-      "prefers": "1600x1200",
-      "supports": "800x600"
-    }
-  },
-  "outputs": {
-    "LVDS1": {
-      ...
-    },
-    "HDMI1": {
-      ...
-    }
-  }
-}
+match:
+    LVDS1: {}
+    HDMI1:
+        prefers: 1600x1200
+        supports: 800x600
+outputs:
+    LVDS1: 
+        ...
+    HDMI1:
+        ...
 ```
 
 ### Priority
 
 When more than one profile matches current output configuration priority can be used to highlight preferred profile.
-Example: You have a laptop and you connect it to different foreign monitors and disable internal laptop's display at the same time.
-With priorities it is possible to create one default profile like this one:
 ```
-{
-  "priority": 50,
-  "match": {
-    "LVDS1": {},
-  },
-  "outputs": {
-    "LVDS1": {
-      ...
-    },
-  }
-}
+priority: 100
+match:
+    ...
+outputs:
+    ...
 ```
-and one profile for all the foreign monitors connected to HDMI1 port:
-```
-{
-  "priority": 100,
-  "match": {
-    "HDMI1": {}
-  },
-  "outputs": {
-    "HDMI1": {
-      ...
-    }
-  }
-}
-```
-profile with higher priority wins, so when you connect an external display to HDMI1 port the second profile will match
-and internal display will be switched off
 Default priority is `100`. To set profile priority use `-P <priority>` with `dump` command. Like this:
 `randrctl dump -e default -P 50`
 
-
 ## Installation
 
-###Archlinux
+### Archlinux
 
-There is AUR package https://aur.archlinux.org/packages/randrctl-git/
+https://aur.archlinux.org/packages/randrctl-git/
+https://aur.archlinux.org/packages/randrctl/
 
 
-###PyPi
+### PyPi
 
 ```
 # pip install randrctl
@@ -267,7 +223,7 @@ There is AUR package https://aur.archlinux.org/packages/randrctl-git/
 ```
 
 
-###Manual from sources
+### Manual from sources
 
 ```
 $ git clone https://github.com/edio/randrctl.git
@@ -276,7 +232,3 @@ $ cp -r etc/randrctl ~/.config
 # python setup.py install
 # randrct-setup
 ```
-
-
-## License
-GPLv3
