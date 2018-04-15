@@ -245,9 +245,10 @@ class CtlFactory:
 
         elif ini_files:
           # Warning message indicating deprecation
-          logger.warning("INI configuration is deprecated and will be removed in next minor release")
-          logger.warning("Please convert %s to yaml format", ini_files[0])
-          logger.warning("Visit https://github.com/edio/randrctl#priorpost-hooks for details")
+          logger.warning(
+            "INI configuration is deprecated and will be removed in next minor release\n" +
+            "Please convert %s to yaml format\n" +
+            "Visit https://github.com/edio/randrctl#priorpost-hooks for details", ini_files[0]) 
 
 
           # Instantiate config parser
