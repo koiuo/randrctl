@@ -149,7 +149,7 @@ class Hook:
                 if err:
                     env["randr_error"] = err
                 logger.debug("Calling '%s'", hook)
-                subprocess.Popen(hook, env=env, shell=True)
+                subprocess.run(hook, env=env, shell=True)
             except Exception as e:
                 logger.warning("Error while executing hook '%s': %s", hook, str(e))
 
