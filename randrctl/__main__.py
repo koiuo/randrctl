@@ -85,6 +85,10 @@ class Main:
         print(pkg_resources.get_distribution("randrctl").version)
 
     def setup(self, args: argparse.Namespace):
+        if args.task is None:
+            sys.stderr.write(f"Available subcommands: {cli.SETUP_COMPLETION}, {cli.SETUP_CONFIG}, {cli.SETUP_UDEV}\n")
+            sys.exit(1)
+
         try:
             {
                 cli.SETUP_COMPLETION: self.setup_completion,

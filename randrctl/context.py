@@ -50,15 +50,17 @@ def configs(config_dirs: list):
             with open(config_file, 'r') as stream:
                 try:
                     logger.debug("reading configuration from %s", config_file)
-                    yield (home, load(stream))
+                    cfg = load(stream)
+                    if cfg:
+                        yield (home, cfg)
                 except YAMLError as e:
                     logger.warning("error reading configuration file %s", config_file)
 
 
 def _build(primary_config_dir: str, config: dict):
-    prior_switch = config.get('hooks', {}).get('prior_switch', None)
-    post_switch = config.get('hooks', {}).get('post_switch', None)
-    post_fail = config.get('hooks', {}).get('post_fail', None)
+    prior_switch = config.get('hooks', dict()).get('prior_switch', None)
+    post_switch = config.get('hooks', dict()).get('post_switch', None)
+    post_fail = config.get('hooks', dict()).get('post_fail', None)
     hooks = Hooks(prior_switch, post_switch, post_fail)
 
     profile_read_locations = [os.path.join(primary_config_dir, PROFILE_DIR_NAME)]
@@ -75,7 +77,7 @@ def build(config_dirs: list = default_config_dirs()):
     Builds a RandrCtl instance and all its dependencies given a list of config directories
     :return: new ready to use RandrCtl instance
     """
-    (primary_config_dir, config) = next(configs(config_dirs), (config_dirs[0], {}))
+    (primary_config_dir, config) = next(configs(config_dirs), (config_dirs[0], dict()))
     return _build(primary_config_dir, config)
 
 
