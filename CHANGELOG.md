@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.7.0 - 2018-06-16
 
 ### Fixed
 - regression #13
