@@ -7,14 +7,12 @@ import shutil
 import pkg_resources
 
 locations = {
-    'randrctl config': ['misc/config.ini', '/etc/randrctl/'],
     'udev rule': ['misc/udev/99-randrctl.rules', '/etc/udev/rules.d/'],
     'bash completion': ['misc/completion/bash/randrctl', '/usr/share/bash-completion/'],
     'zsh completion': ['misc/completion/zsh/_randrctl', '/usr/share/zsh/site-functions/'],
 }
 
 optional_hints = [
-    'You can copy randrctl config to ~/.config/randrctl/config.ini for per-user configuration',
     'To reload udev rules without reboot, do as root:\n'
     '\tudevadm control --reload-rules',
 ]

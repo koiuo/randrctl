@@ -1,11 +1,10 @@
-import os
-import sys
 import argparse
 import logging
+import sys
 
 import pkg_resources
 
-from randrctl.ctl import CtlFactory
+from randrctl import context
 from randrctl.exception import RandrCtlException
 
 logger = logging.getLogger('randrctl')
@@ -16,14 +15,11 @@ LIST = 'list'
 SHOW = 'show'
 SWITCH_TO = 'switch-to'
 
-SYS_HOME_DIR = "/etc/randrctl/"
-
-
-def get_user_home():
-    return os.path.join(os.environ.get('XDG_CONFIG_HOME', os.path.join(os.environ.get('HOME'), '.config')), 'randrctl')
-
 
 class Main:
+    def __init__(self):
+        self.randrctl = None
+
     def run(self):
         parser = argparse.ArgumentParser(prog='randrctl')
 
@@ -35,12 +31,6 @@ class Main:
 
         parser.add_argument('-X', help='be even more verbose', default=False, action='store_const', const=True,
                             dest='extended_debug')
-
-        parser.add_argument('--system',
-                            help="read profiles and config only from {}. By default {} are used".format(SYS_HOME_DIR,
-                                                                                                        [get_user_home(),
-                                                                                                         SYS_HOME_DIR]),
-                            action='store_const', const=True, default=False, dest="sys")
 
         commands_parsers = parser.add_subparsers(title='Available commands',
                                                  description='use "command -h" for details',
@@ -107,12 +97,7 @@ class Main:
 
         logging.basicConfig(format=format, level=level)
 
-        homes = [SYS_HOME_DIR] if args.sys else [get_user_home(), SYS_HOME_DIR]
-
-        # randrctl
-        factory = CtlFactory(homes)
-        factory.ensure_homes()
-        self.randrctl = factory.get_randrctl()
+        self.randrctl = context.build()
 
         try:
             {

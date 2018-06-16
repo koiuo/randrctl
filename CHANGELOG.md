@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- regression #13
+
+### Removed
+
+- support for `config.ini`. Please migrate to `config.yaml`
+- support for configuration in `/etc/randrctl`
+
 ## 1.6.0 - 2018-04-15
 
 ### Added

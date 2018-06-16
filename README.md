@@ -2,12 +2,42 @@
 
 # randrctl
 
-Screen profiles manager for X.
+Screen profiles manager for X.org.
 
-It allows to store current screen setup in a declarative configuration file (a profile) and apply stored settings later
-with a simple command.
+_randrctl_ remembers your X.org screen configurations (position of displays, rotation, scaling, etc.) and switches
+between them automatically as displays are connected or manually, when necessary:
+```
+randrctl switch-to home
+randrctl switch-to office
+```
 
-Tool may be useful to people who work on their laptop connecting external displays in many different locations.
+## Install
+
+_randrctl_ depends on `xrandr` utility and won't work without it. Please install it first.
+
+### Archlinux
+
+https://aur.archlinux.org/packages/randrctl-git/
+https://aur.archlinux.org/packages/randrctl/
+
+### PyPi
+
+```
+# pip install randrctl
+# randrctl-setup
+```
+
+### Manually from sources
+
+```
+$ git clone https://github.com/edio/randrctl.git
+$ cd randrctl
+# python setup.py install
+# randrct-setup
+```
+
+
+## Usage
 
 Usage is very simple:
 
@@ -31,8 +61,7 @@ Usage is very simple:
 
   ```randrctl --help```
 
-
-## Auto-switching<a name="auto"></a>
+### Auto-switching<a name="auto"></a>
 
 ```randrctl``` can associate profile with currently connected displays and switch to this profile automatically whenever
 same (or similar) set of displays is connected.
@@ -73,7 +102,7 @@ If `randrctl dump` is invoked without additional options, it dumps only screen s
 during auto-switching.
 
 
-## Prior/Post hooks
+### Prior/Post hooks
 
 randrctl can execute custom commands (hooks) before and after switching to profile or if switching fails. Hooks are
 specified in config file `$XDG_CONFIG_HOME/randrctl/config.yaml`
@@ -90,7 +119,7 @@ The typical use-case of this is displaying desktop notification with libnotify.
 I also use it to pause i3 window manager as it was known to crash sometimes during the switch.
 
 
-## Profile format
+### Profile format
 
 Profile is a simple text file in YAML format. It can be edited manually, however it is rarely required in practice
 because `randrctl dump` handles most common cases.
@@ -117,7 +146,7 @@ without additional options.
 The `match` section is optional and is dumped only when one of the auto-switching rules is specified.
 
 
-### Outputs
+#### Outputs
 
 Each property of `outputs` section references output as seen in xrandr (i.e. *DP1*, *HDMI2*, etc.). Meaning of the
 properties is the same as in the xrandr utility.
@@ -135,7 +164,7 @@ DP1-2:
 ```
 
 
-### Primary
+#### Primary
 
 Name of the primary output as seen in xrandr.
 
@@ -143,7 +172,7 @@ Name of the primary output as seen in xrandr.
 primary: eDP1
 ```
 
-### Match
+#### Match
 
 Set of rules for auto-switching.
 
@@ -194,7 +223,7 @@ outputs:
         ...
 ```
 
-### Priority
+#### Priority
 
 When more than one profile matches current output configuration priority can be used to highlight preferred profile.
 ```
@@ -207,28 +236,11 @@ outputs:
 Default priority is `100`. To set profile priority use `-P <priority>` with `dump` command. Like this:
 `randrctl dump -e default -P 50`
 
-## Installation
+## Develop
 
-### Archlinux
-
-https://aur.archlinux.org/packages/randrctl-git/
-https://aur.archlinux.org/packages/randrctl/
-
-
-### PyPi
+### Run tests
 
 ```
-# pip install randrctl
-# randrctl-setup
+$ python setup.py test
 ```
 
-
-### Manual from sources
-
-```
-$ git clone https://github.com/edio/randrctl.git
-$ cd randrctl
-$ cp -r etc/randrctl ~/.config
-# python setup.py install
-# randrct-setup
-```

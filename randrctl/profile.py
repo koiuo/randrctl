@@ -17,18 +17,13 @@ def hash(string: str):
 
 
 class ProfileManager:
-    def __init__(self, profile_dirs: list):
-        """
-        Create profile manager that searches for profiles under paths passed as a list.
-        Paths should be expanded and must exist.
-        The first one is considered preferred and will be used for writes and will prevail in case of names conflicts.
-        """
-        self.profile_dirs = profile_dirs
-        self.preferred_profile_dir = profile_dirs[0]
+    def __init__(self, read_locations: list, write_location: str):
+        self.read_locations = list(filter(lambda location: os.path.isdir(location), read_locations))
+        self.write_location = write_location
 
     def read_all(self):
         profiles = []
-        for profile_dir in self.profile_dirs:
+        for profile_dir in self.read_locations:
             for entry in os.listdir(profile_dir):
                 path = os.path.join(profile_dir, entry)
                 if os.path.isfile(path):
@@ -42,7 +37,7 @@ class ProfileManager:
     def read_one(self, profile_name: str):
         # TODO handle missing profile
         profile = None
-        for profile_dir in self.profile_dirs:
+        for profile_dir in self.read_locations:
             profile_path = os.path.join(profile_dir, profile_name)
             if not os.path.isfile(profile_path):
                 continue
@@ -53,7 +48,7 @@ class ProfileManager:
         if profile:
             return profile
         else:
-            raise NoSuchProfileException(profile_name, self.profile_dirs)
+            raise NoSuchProfileException(profile_name, self.read_locations)
 
     def read_file(self, profile_file_descriptor):
         try:
@@ -93,9 +88,10 @@ class ProfileManager:
         Profile name becomes the name of the file. If name contains illegal characters, only safe part is used.
         For example, if name is my_home_vga/../../passwd, then file will be written as passwd under profile dir
         """
+        os.makedirs(self.write_location)
         dict = self.to_dict(p)
         safename = os.path.basename(p.name)
-        fullname = os.path.join(self.preferred_profile_dir, safename)
+        fullname = os.path.join(self.write_location, safename)
         if safename != p.name:
             logger.warning("Illegal name provided. Writing as %s", fullname)
         with open(fullname, 'w+') as fp:

@@ -4,8 +4,6 @@ from randrctl.exception import XrandrException, ParseException
 from randrctl.model import Profile, Output, XrandrConnection
 from randrctl.xrandr import Xrandr
 
-__author__ = 'edio'
-
 
 class TestXrandr(TestCase):
     xrandr = Xrandr()

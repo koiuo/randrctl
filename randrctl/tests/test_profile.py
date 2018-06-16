@@ -5,11 +5,9 @@ from unittest import TestCase
 from randrctl.model import Profile, Rule, Viewport, Output, XrandrConnection, Display
 from randrctl.profile import ProfileManager, ProfileMatcher, hash
 
-__author__ = 'edio'
-
 
 class Test_ProfileManager(TestCase):
-    manager = ProfileManager(["."])
+    manager = ProfileManager(["."], ".")
 
     TEST_PROFILE_FILE = os.path.join(os.path.dirname(__file__), 'profile_example')
     TEST_SIMPLE_PROFILE_FILE = os.path.join(os.path.dirname(__file__), 'simple_profile_example')
