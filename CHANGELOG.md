@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- `-v` option is replaced with `version` command. Use `randrctl version` instead of `randrctl -v`
+
 ## 1.7.0 - 2018-06-16
 
 ### Fixed

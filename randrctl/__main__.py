@@ -14,6 +14,7 @@ DUMP = 'dump'
 LIST = 'list'
 SHOW = 'show'
 SWITCH_TO = 'switch-to'
+VERSION = 'version'
 
 
 class Main:
@@ -22,9 +23,6 @@ class Main:
 
     def run(self):
         parser = argparse.ArgumentParser(prog='randrctl')
-
-        parser.add_argument('-v', '--version', help='print version information and exit', action='store_const',
-                            const=True, default=False)
 
         parser.add_argument('-x', help='be verbose', default=False, action='store_const', const=True,
                             dest='debug')
@@ -75,11 +73,10 @@ class Main:
         command_auto = commands_parsers.add_parser(AUTO,
                                                    help='automatically switch to the best matching profile')
 
-        args = parser.parse_args(sys.argv[1:])
+        # version
+        command_version = commands_parsers.add_parser(VERSION, help='print version information and exit')
 
-        if args.version:
-            print(self.get_version())
-            sys.exit(0)
+        args = parser.parse_args(sys.argv[1:])
 
         if args.command is None:
             parser.print_help()
@@ -101,11 +98,12 @@ class Main:
 
         try:
             {
-                SWITCH_TO: self.switch_to,
+                AUTO: self.auto,
+                DUMP: self.dump,
                 LIST: self.list,
                 SHOW: self.show,
-                DUMP: self.dump,
-                AUTO: self.auto
+                SWITCH_TO: self.switch_to,
+                VERSION: self.version,
             }[args.command](args)
         except RandrCtlException as e:
             logger.error(e)
@@ -140,8 +138,8 @@ class Main:
     def auto(self, args: argparse.Namespace):
         self.randrctl.switch_auto()
 
-    def get_version(self):
-        return pkg_resources.get_distribution("randrctl").version
+    def version(self, args: argparse.Namespace):
+        print(pkg_resources.get_distribution("randrctl").version)
 
 
 if __name__ == '__main__':
