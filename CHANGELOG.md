@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- exception during `randrctl dump`
+
 ### Changed
 
 - `-v` option is replaced with `version` command. Use `randrctl version` instead of `randrctl -v`

@@ -88,7 +88,7 @@ class ProfileManager:
         Profile name becomes the name of the file. If name contains illegal characters, only safe part is used.
         For example, if name is my_home_vga/../../passwd, then file will be written as passwd under profile dir
         """
-        os.makedirs(self.write_location)
+        os.makedirs(self.write_location, exist_ok=True)
         dict = self.to_dict(p)
         safename = os.path.basename(p.name)
         fullname = os.path.join(self.write_location, safename)
