@@ -1,20 +1,15 @@
 import argparse
 import logging
+import shutil
 import sys
 
+import argcomplete
 import pkg_resources
 
-from randrctl import context
+from randrctl import context, cli
 from randrctl.exception import RandrCtlException
 
 logger = logging.getLogger('randrctl')
-
-AUTO = 'auto'
-DUMP = 'dump'
-LIST = 'list'
-SHOW = 'show'
-SWITCH_TO = 'switch-to'
-VERSION = 'version'
 
 
 class Main:
@@ -22,60 +17,7 @@ class Main:
         self.randrctl = None
 
     def run(self):
-        parser = argparse.ArgumentParser(prog='randrctl')
-
-        parser.add_argument('-x', help='be verbose', default=False, action='store_const', const=True,
-                            dest='debug')
-
-        parser.add_argument('-X', help='be even more verbose', default=False, action='store_const', const=True,
-                            dest='extended_debug')
-
-        commands_parsers = parser.add_subparsers(title='Available commands',
-                                                 description='use "command -h" for details',
-                                                 # metavar='command',
-                                                 dest='command', )
-        # commands_parsers.required = True
-
-        # switch-to
-        command_switch_to = commands_parsers.add_parser(SWITCH_TO, help='switch to profile')
-        command_switch_to.add_argument('profile_name', help='name of the profile to switch to')
-
-        # show
-        command_show = commands_parsers.add_parser(SHOW, help='show profile')
-        command_show.add_argument('-j', '--json', action='store_const', const=True, default=False,
-                                  help='use JSON-compatible format', dest='json')
-        command_show.add_argument('profile_name', help='name of the profile to show. Show current setup if omitted',
-                                  default=None, nargs='?')
-
-        # list
-        command_list = commands_parsers.add_parser(LIST, help='list available profiles')
-        command_list.add_argument('-l', action='store_const', const=True, default=False,
-                                  help='long listing', dest='long_listing')
-        command_list.add_argument('-s', action='store_const', const=True, default=False,
-                                  help='scored listing', dest='scored_listing')
-
-        # dump
-        command_dump = commands_parsers.add_parser(DUMP,
-                                                   help='dump current screen setup')
-        command_dump.add_argument('-m', action='store_const', const=True, default=False,
-                                  help='dump with match by supported mode', dest='match_supports')
-        command_dump.add_argument('-p', action='store_const', const=True, default=False,
-                                  help='dump with match by preferred mode', dest='match_preferred')
-        command_dump.add_argument('-e', action='store_const', const=True, default=False,
-                                  help='dump with match by edid', dest='match_edid')
-        command_dump.add_argument('-P', action='store', type=int, default=100, dest='priority',
-                                  help='profile priority')
-        command_dump.add_argument('-j', '--json', action='store_const', const=True, default=False,
-                                  help='use JSON-compatible format', dest='json')
-        command_dump.add_argument('profile_name', help='name of the profile to dump setup to')
-
-        # auto
-        command_auto = commands_parsers.add_parser(AUTO,
-                                                   help='automatically switch to the best matching profile')
-
-        # version
-        command_version = commands_parsers.add_parser(VERSION, help='print version information and exit')
-
+        parser = cli.parser()
         args = parser.parse_args(sys.argv[1:])
 
         if args.command is None:
@@ -98,12 +40,13 @@ class Main:
 
         try:
             {
-                AUTO: self.auto,
-                DUMP: self.dump,
-                LIST: self.list,
-                SHOW: self.show,
-                SWITCH_TO: self.switch_to,
-                VERSION: self.version,
+                cli.AUTO: self.auto,
+                cli.DUMP: self.dump,
+                cli.LIST: self.list,
+                cli.SHOW: self.show,
+                cli.SWITCH_TO: self.switch_to,
+                cli.VERSION: self.version,
+                cli.SETUP: self.setup,
             }[args.command](args)
         except RandrCtlException as e:
             logger.error(e)
@@ -140,6 +83,28 @@ class Main:
 
     def version(self, args: argparse.Namespace):
         print(pkg_resources.get_distribution("randrctl").version)
+
+    def setup(self, args: argparse.Namespace):
+        try:
+            {
+                cli.SETUP_COMPLETION: self.setup_completion,
+                cli.SETUP_CONFIG: self.setup_config,
+                cli.SETUP_UDEV: self.setup_udev,
+            }[args.task](args)
+        except RandrCtlException as e:
+            logger.error(e)
+            sys.exit(1)
+
+    def setup_completion(self, args: argparse.Namespace):
+        print(argcomplete.shellcode('randrctl', True, 'bash', None))
+
+    def setup_config(self, args: argparse.Namespace):
+        with (open(pkg_resources.resource_filename('randrctl', 'misc/config.yaml'), 'r')) as f:
+            shutil.copyfileobj(f, sys.stdout)
+
+    def setup_udev(self, args: argparse.Namespace):
+        with (open(pkg_resources.resource_filename('randrctl', 'misc/udev/99-randrctl.rules'), 'r')) as f:
+            shutil.copyfileobj(f, sys.stdout)
 
 
 if __name__ == '__main__':

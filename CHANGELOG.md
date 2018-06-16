@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `setup` command to assist in randrctl setup
+- new bash completion generated from applicatio code
+
+### Removed
+
+- outdated zsh and bash completion files. zsh users can enable bash completion support by adding to `.zshrc`
+    ```
+    autoload bashcompinit
+    bashcompinit
+    ```
+
 ## 1.7.1 - 2018-06-16
 
 ### Fixed

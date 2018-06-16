@@ -20,11 +20,19 @@ _randrctl_ depends on `xrandr` utility and won't work without it. Please install
 https://aur.archlinux.org/packages/randrctl-git/
 https://aur.archlinux.org/packages/randrctl/
 
+```
+$ randrctl setup config > ${XDG_CONFIG_HOME:-$HOME/.config}/randrctl/config.yaml
+```
+
 ### PyPi
 
 ```
 # pip install randrctl
-# randrctl-setup
+
+# randrctl setup udev > /etc/udev/rules.d/99-randrctl.rules
+# randrctl setup completion > /usr/share/bash-completion/completions/randrctl
+
+$ randrctl setup config > ${XDG_CONFIG_HOME:-$HOME/.config}/randrctl/config.yaml
 ```
 
 ### Manually from sources
@@ -32,10 +40,14 @@ https://aur.archlinux.org/packages/randrctl/
 ```
 $ git clone https://github.com/edio/randrctl.git
 $ cd randrctl
-# python setup.py install
-# randrct-setup
-```
 
+# python setup.py install
+
+# randrctl setup udev > /etc/udev/rules.d/99-randrctl.rules
+# randrctl setup completion > /usr/share/bash-completion/completions/randrctl
+
+$ randrctl setup config > ${XDG_CONFIG_HOME:-$HOME/.config}/randrctl/config.yaml
+```
 
 ## Usage
 
