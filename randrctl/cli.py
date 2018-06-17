@@ -1,10 +1,19 @@
 import argparse
+import logging
 import os
+import shutil
+import sys
 import textwrap
 
 import argcomplete
+import pkg_resources
 
 from randrctl import context
+from randrctl.ctl import RandrCtl
+from randrctl.exception import RandrCtlException
+
+
+logger = logging.getLogger('randrctl')
 
 AUTO = 'auto'
 DUMP = 'dump'
@@ -116,3 +125,107 @@ def parser():
     argcomplete.autocomplete(parser)
 
     return parser
+
+def main():
+    cli = parser()
+    args = cli.parse_args(sys.argv[1:])
+
+    if args.command is None:
+        cli.print_help()
+        sys.exit(1)
+
+    # configure logging
+    level = logging.WARN
+    logging_format = '%(levelname)-5s %(message)s'
+    if args.debug:
+        level = logging.DEBUG
+
+    if args.extended_debug:
+        level = logging.DEBUG
+        logging_format = '%(levelname)-5s %(name)s: %(message)s'
+
+    logging.basicConfig(format=logging_format, level=level)
+
+    randrctl = context.build()
+
+    try:
+        {
+            AUTO: cmd_auto,
+            DUMP: cmd_dump,
+            LIST: cmd_list,
+            SHOW: cmd_show,
+            SWITCH_TO: cmd_switch_to,
+            VERSION: cmd_version,
+            SETUP: cmd_setup,
+        }[args.command](randrctl, args)
+    except RandrCtlException as e:
+        logger.error(e)
+        sys.exit(1)
+
+
+def cmd_list(randrctl: RandrCtl, args: argparse.Namespace):
+    if args.long_listing:
+        randrctl.list_all_long()
+    elif args.scored_listing:
+        randrctl.list_all_scored()
+    else:
+        randrctl.list_all()
+
+
+def cmd_switch_to(randrctl: RandrCtl, args: argparse.Namespace):
+    randrctl.switch_to(args.profile_name)
+
+
+def cmd_show(randrctl: RandrCtl, args: argparse.Namespace):
+    if args.profile_name:
+        randrctl.print(args.profile_name, json_compatible=args.json)
+    else:
+        randrctl.dump_current('current', json_compatible=args.json)
+
+
+def cmd_dump(randrctl: RandrCtl, args: argparse.Namespace):
+    randrctl.dump_current(name=args.profile_name, to_file=True,
+                               include_supports_rule=args.match_supports,
+                               include_preferred_rule=args.match_preferred,
+                               include_edid_rule=args.match_edid,
+                               include_refresh_rate=args.match_edid,
+                               priority=args.priority,
+                               json_compatible=args.json)
+
+
+def cmd_auto(randrctl: RandrCtl, args: argparse.Namespace):
+    randrctl.switch_auto()
+
+
+def cmd_version(randrctl: RandrCtl, args: argparse.Namespace):
+    print(pkg_resources.get_distribution("randrctl").version)
+
+
+def cmd_setup(randrctl: RandrCtl, args: argparse.Namespace):
+    if args.task is None:
+        sys.stderr.write(f"Available subcommands: {cli.SETUP_COMPLETION}, {cli.SETUP_CONFIG}, {cli.SETUP_UDEV}\n")
+        sys.exit(1)
+    try:
+        {
+            SETUP_COMPLETION: setup_completion,
+            SETUP_CONFIG: setup_config,
+            SETUP_UDEV: setup_udev,
+        }[args.task]()
+    except RandrCtlException as e:
+        logger.error(e)
+        sys.exit(1)
+
+
+def setup_completion():
+    print(argcomplete.shellcode('randrctl', True, 'bash', None))
+
+
+def setup_config():
+    with (open(pkg_resources.resource_filename('randrctl', 'misc/config.yaml'), 'r')) as f:
+        shutil.copyfileobj(f, sys.stdout)
+
+
+def setup_udev():
+    with (open(pkg_resources.resource_filename('randrctl', 'misc/udev/99-randrctl.rules'), 'r')) as f:
+        shutil.copyfileobj(f, sys.stdout)
+

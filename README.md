@@ -256,3 +256,9 @@ Default priority is `100`. To set profile priority use `-P <priority>` with `dum
 $ python setup.py test
 ```
 
+### Release to PyPi
+
+```
+$ python setup.py sdist upload
+```
+

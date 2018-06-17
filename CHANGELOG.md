@@ -5,7 +5,7 @@
 ### Added
 
 - `setup` command to assist in randrctl setup
-- new bash completion generated from applicatio code
+- new bash completion generated from application code
 
 ### Removed
 
