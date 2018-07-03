@@ -244,7 +244,7 @@ class Xrandr:
             supported_modes.append(mode)
             if current:
                 current_mode = mode
-                current_rate = int(round(float(rate)))
+                current_rate = rate
             if preferred:
                 preferred_mode = mode
 
