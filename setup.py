@@ -2,4 +2,4 @@
 
 from setuptools import setup
 
-setup(setup_requires=['packit'], packit=True)
+setup(setup_requires=['pbr'], pbr=True)

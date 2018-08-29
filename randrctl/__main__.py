@@ -107,7 +107,7 @@ class Main:
             shutil.copyfileobj(f, sys.stdout)
 
     def setup_udev(self, args: argparse.Namespace):
-        with (open(pkg_resources.resource_filename('randrctl', 'misc/udev/99-randrctl.rules'), 'r')) as f:
+        with (open(pkg_resources.resource_filename('randrctl', 'misc/99-randrctl.rules'), 'r')) as f:
             shutil.copyfileobj(f, sys.stdout)
 
 

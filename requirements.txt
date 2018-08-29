@@ -1,2 +1,3 @@
-pyyaml >= 3.08
+pyyaml>=3.08
 argcomplete
+pytest==3.4.2

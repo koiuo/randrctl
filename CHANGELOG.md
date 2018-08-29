@@ -7,6 +7,11 @@
 - `setup` command to assist in randrctl setup
 - new bash completion generated from applicatio code
 
+### Fixed
+
+- python 3.7 compatibility
+- migrated from `packit` to `pbr` (should fix installation issues)
+
 ### Removed
 
 - outdated zsh and bash completion files. zsh users can enable bash completion support by adding to `.zshrc`

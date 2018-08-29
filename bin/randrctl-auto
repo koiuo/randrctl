@@ -9,6 +9,6 @@ for X in /tmp/.X11-unix/X*; do
     user=$( who | grep \(:$D[.0-9]*\) | cut -d ' ' -sf 1 | uniq )
     if [ x"$user" != x"" ]; then
         export DISPLAY=":$D"
-        /bin/su -c "/usr/bin/randrctl auto" "$user"
+        /usr/bin/su -c "/usr/bin/randrctl auto" "$user"
     fi
 done
