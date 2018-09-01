@@ -1,3 +1,5 @@
+from os import path
+
 import logging
 import os
 
@@ -11,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 CONFIG_NAME = "config.yaml"
 PROFILE_DIR_NAME = "profiles"
+DEFAULT_CONFIG_LOCATION = ".config/randrctl"
 
 
 def default_config_dirs():
@@ -19,10 +22,11 @@ def default_config_dirs():
     """
     # $HOME is guaranteed to exist on POSIX
     dirs = [
-        _recursive_expand('$HOME/.config/randrctl')
+        _recursive_expand(path.join('$HOME', DEFAULT_CONFIG_LOCATION))
     ]
 
     # if XDG_CONFIG_HOME is defined, use it too
+    # TODO this won't work if executed by udev. Remove entirely?
     if os.environ.get('XDG_CONFIG_HOME'):
         dirs.insert(0, _recursive_expand('$XDG_CONFIG_HOME/randrctl'))
 
@@ -44,20 +48,27 @@ def configs(config_dirs: list):
     :param config_dirs: list of directories that may contain configs
     :return: an iterator over tuples (config_dir, parsed_config), empty iterator if there are not valid configs
     """
-    for home in config_dirs:
-        config_file = os.path.join(home, CONFIG_NAME)
+    for randrctl_home in config_dirs:
+        config_file = os.path.join(randrctl_home, CONFIG_NAME)
         if os.path.isfile(config_file):
             with open(config_file, 'r') as stream:
                 try:
                     logger.debug("reading configuration from %s", config_file)
                     cfg = load(stream)
                     if cfg:
-                        yield (home, cfg)
+                        yield (randrctl_home, cfg)
                 except YAMLError as e:
                     logger.warning("error reading configuration file %s", config_file)
 
 
-def _build(primary_config_dir: str, config: dict):
+def build(display: str, xauthority: str = None, config_dirs: list = default_config_dirs()):
+    """
+    Builds a RandrCtl instance and all its dependencies given a list of config directories
+    :param: display - display
+    :return: new ready to use RandrCtl instance
+    """
+    (primary_config_dir, config) = next(configs(config_dirs), (config_dirs[0], dict()))
+
     prior_switch = config.get('hooks', dict()).get('prior_switch', None)
     post_switch = config.get('hooks', dict()).get('post_switch', None)
     post_fail = config.get('hooks', dict()).get('post_fail', None)
@@ -67,18 +78,10 @@ def _build(primary_config_dir: str, config: dict):
     profile_write_location = os.path.join(primary_config_dir, PROFILE_DIR_NAME)
     profile_manager = ProfileManager(profile_read_locations, profile_write_location)
 
-    xrandr = Xrandr()
+    xrandr = Xrandr(display, xauthority)
 
     return RandrCtl(profile_manager, xrandr, hooks)
 
-
-def build(config_dirs: list = default_config_dirs()):
-    """
-    Builds a RandrCtl instance and all its dependencies given a list of config directories
-    :return: new ready to use RandrCtl instance
-    """
-    (primary_config_dir, config) = next(configs(config_dirs), (config_dirs[0], dict()))
-    return _build(primary_config_dir, config)
 
 
 

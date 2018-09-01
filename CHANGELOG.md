@@ -6,6 +6,7 @@
 
 - `setup` command to assist in randrctl setup
 - new bash completion generated from application code
+- `-d` option to detect `DISPLAY` if executed by udev
 
 ### Fixed
 
@@ -14,11 +15,16 @@
 
 ### Removed
 
-- outdated zsh and bash completion files. zsh users can enable bash completion support by adding to `.zshrc`
+- outdated zsh and bash completion files. _bash_ completion can be generated with
+    ```
+    randrctl setup completion
+    ```
+  _zsh_ users can enable bash completion support by adding to `.zshrc`
     ```
     autoload bashcompinit
     bashcompinit
     ```
+- obsolete `randrctl-auto` wrapper script. Use `randrctl -d` instead
 
 ## 1.7.1 - 2018-06-16
 

@@ -1,14 +1,19 @@
-import argparse
-import logging
-import os
-import shutil
+import pwd
 import sys
-import textwrap
+from os import path
 
 import argcomplete
+import argparse
+import glob
+import logging
+import os
 import pkg_resources
+import re
+import shutil
+import subprocess
+import textwrap
 
-from randrctl import context
+from randrctl import context, XAUTHORITY, DISPLAY
 from randrctl.ctl import RandrCtl
 from randrctl.exception import RandrCtlException
 
@@ -28,6 +33,9 @@ SETUP_CONFIG = 'config'
 logger = logging.getLogger('randrctl')
 
 
+# CLI parser
+
+
 def potential_profiles(config_dirs: list):
     profile_dirs = map(lambda config_dir: os.path.join(config_dir, context.PROFILE_DIR_NAME), config_dirs)
     existing = filter(lambda profile_dir: os.path.isdir(profile_dir), profile_dirs)
@@ -42,6 +50,9 @@ def complete_profiles(prefix, parsed_args, **kwargs):
 
 def args_parser():
     parser = argparse.ArgumentParser(prog='randrctl')
+
+    parser.add_argument('-d', help='allow X display detection', default=False, action='store_const', const=True,
+                        dest='detect_display')
 
     parser.add_argument('-x', help='be verbose', default=False, action='store_const', const=True,
                         dest='debug')
@@ -127,6 +138,9 @@ def args_parser():
     return parser
 
 
+# Commands
+
+
 def cmd_list(randrctl: RandrCtl, args: argparse.Namespace):
     if args.long_listing:
         randrctl.list_all_long()
@@ -195,38 +209,97 @@ def cmd_setup_udev(args: argparse.Namespace):
         shutil.copyfileobj(f, sys.stdout)
 
 
-def main():
-    parser = args_parser()
-    args = parser.parse_args(sys.argv[1:])
+# Main logic
 
-    if args.command is None:
-        parser.print_help()
-        sys.exit(1)
 
-    # configure logging
+def find_display_owner(display: str):
+    regex = f"\({display}[.\d]?\)"
+    matcher = re.compile(regex)
+    # run /usr/bin/who. It output current display and screen as (:DISPLAY.SCREEN)
+    # TODO is there a better way to do this in python?
+    for line in subprocess.run('/usr/bin/who', stdout=subprocess.PIPE).stdout.decode('utf-8').splitlines():
+        if matcher.search(line):
+            username = line[0:line.find(' ')]
+            return pwd.getpwnam(username)
+
+
+def x_displays():
+    # Find all local displays by inspecting X sockets. Return as :0, :1, etc.
+    # https://stackoverflow.com/questions/11367354/obtaining-list-of-all-xorg-displays
+    return list(map(lambda socket: ':' + socket[16:], glob.glob('/tmp/.X11-unix/X*')))
+
+
+def configure_logging(args: argparse.Namespace):
     level = logging.WARN
     log_format = '%(levelname)-5s %(message)s'
     if args.debug:
         level = logging.DEBUG
-
     if args.extended_debug:
         level = logging.DEBUG
         log_format = '%(levelname)-5s %(name)s: %(message)s'
-
     logging.basicConfig(format=log_format, level=level)
 
-    randrctl = context.build()
 
-    try:
-        {
-            AUTO: cmd_auto,
-            DUMP: cmd_dump,
-            LIST: cmd_list,
-            SHOW: cmd_show,
-            SWITCH_TO: cmd_switch_to,
-            VERSION: cmd_version,
-            SETUP: cmd_setup,
-        }[args.command](randrctl, args)
-    except RandrCtlException as e:
-        logger.error(e)
+def getenv(variable: str):
+    value = os.environ.get(variable)
+    logger.debug("%s%s", variable, "=" + value if value else " is not set")
+    return value
+
+
+def main():
+    parser = args_parser()
+    args = parser.parse_args(sys.argv[1:])
+
+    configure_logging(args)
+
+    commands = {
+        AUTO: cmd_auto,
+        DUMP: cmd_dump,
+        LIST: cmd_list,
+        SHOW: cmd_show,
+        SWITCH_TO: cmd_switch_to,
+        VERSION: cmd_version,
+        SETUP: cmd_setup,
+    }
+    cmd = commands.get(args.command)
+    if cmd is None:
+        parser.print_help()
         sys.exit(1)
+
+    display = getenv(DISPLAY)
+    xauthority = getenv(XAUTHORITY)
+
+    if not display:
+        # likely we are executed from UDEV rule
+
+        if not args.detect_display:
+            logger.error("DISPLAY environment variable is not set")
+            sys.exit(1)
+
+        displays = x_displays()
+        for display in displays:
+            logger.debug("Trying DISPLAY %s", display)
+            owner = find_display_owner(display)
+            logger.debug("%s owner is '%s' with HOME '%s'", display, owner.pw_name, owner.pw_dir)
+            try:
+                os.environ[DISPLAY] = display
+                os.environ[XAUTHORITY] = path.join(owner.pw_dir, ".Xauthority")
+                randrctl = context.build(
+                    display=display,
+                    xauthority=xauthority,
+                    config_dirs=[path.join(owner.pw_dir, context.DEFAULT_CONFIG_LOCATION)]
+                )
+                cmd(randrctl, args)
+                # exit as soon as first execution succeeds
+                sys.exit(0)
+            except RandrCtlException as e:
+                logger.error(e)
+        logger.error("Could not apply settings for any available display [%s]", displays)
+        sys.exit(1)
+    else:
+        try:
+            randrctl = context.build(display, xauthority)
+            cmd(randrctl, args)
+        except RandrCtlException as e:
+            logger.error(e)
+            sys.exit(1)

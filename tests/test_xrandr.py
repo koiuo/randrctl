@@ -6,10 +6,10 @@ from randrctl.xrandr import Xrandr
 
 
 class TestXrandr(TestCase):
-    xrandr = Xrandr()
+    xrandr = Xrandr(":0", None)
 
     def test_compose_mode_args(self):
-        xrandr = Xrandr()
+        xrandr = Xrandr(":0", None)
         xrandr.EXECUTABLE = "stub"
 
         outputs = [Output("LVDS1", mode='1366x768'),
@@ -39,7 +39,7 @@ class TestXrandr(TestCase):
         self.assertEqual(1, command.count("HDMI2"))
 
     def test_compose_mode_args_exact_line(self):
-        xrandr = Xrandr()
+        xrandr = Xrandr(":0", None)
         xrandr.EXECUTABLE = "stub"
 
         outputs = [Output("LVDS1", mode='1366x768')]

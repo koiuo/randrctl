@@ -1,8 +1,11 @@
+import os
+
 from functools import reduce, lru_cache
 import logging
 import re
 import subprocess
 
+from randrctl import DISPLAY, XAUTHORITY
 from randrctl.exception import XrandrException, ParseException
 from randrctl.model import Profile, Viewport, XrandrConnection, Display
 
@@ -32,6 +35,13 @@ class Xrandr:
     MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
     CURRENT_MODE_REGEX = re.compile("\s*(\S+)\s+([0-9\.]+)(.*$)")
 
+    def __init__(self, display: str, xauthority: str):
+        env = dict(os.environ)
+        env[DISPLAY] = display
+        if xauthority:
+            env[XAUTHORITY] = xauthority
+        self.env = env
+
     def apply(self, profile: Profile):
         """
         Apply given profile by calling xrandr
@@ -51,7 +61,7 @@ class Xrandr:
         logger.debug("Calling xrandr with args %s", args)
         args.insert(0, self.EXECUTABLE)
 
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, env=self.env)
         err = p.stderr.readlines()
         if err:
             # close descriptors
