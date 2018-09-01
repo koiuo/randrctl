@@ -6,7 +6,7 @@ from randrctl.model import Profile, Rule, Viewport, Output, XrandrConnection, Di
 from randrctl.profile import ProfileManager, ProfileMatcher, hash
 
 
-class Test_ProfileManager(TestCase):
+class ProfileManagerTest(TestCase):
     manager = ProfileManager(["."], ".")
 
     TEST_PROFILE_FILE = os.path.join(os.path.dirname(__file__), 'profile_example')
@@ -18,30 +18,24 @@ class Test_ProfileManager(TestCase):
 
             self.assertIsNotNone(p)
 
-            expected = [
-                Output("LVDS1", mode="1366x768"),
-                Output("DP1", "1920x1080", pos="1366x0"),
-                Output("VGA1", "800x600", pos="3286x0", rotate="inverted", panning="800x1080", rate=80)
-            ]
-            self.assertOutputs(expected, p.outputs)
+            expected = {
+                "LVDS1": Output(mode="1366x768"),
+                "DP1": Output(mode="1920x1080", pos="1366x0"),
+                "VGA1": Output(mode="800x600", pos="3286x0", rotate="inverted", panning="800x1080", rate=80)
+            }
+            # self.assertDictEqual(expected, p.outputs)
+            self.assertEqual(expected["LVDS1"], p.outputs["LVDS1"])
             self.assertDictEqual(Rule("d8578edf8458ce06fbc5bb76a58c5ca4", "1920x1200", "1920x1080").__dict__,
-                             p.rules["DP1"].__dict__)
-            self.assertDictEqual(Rule().__dict__, p.rules["LVDS1"].__dict__)
+                             p.match["DP1"].__dict__)
+            self.assertDictEqual(Rule().__dict__, p.match["LVDS1"].__dict__)
 
     def test_simple_read(self):
         with open(self.TEST_SIMPLE_PROFILE_FILE) as f:
             p = self.manager.read_file(f)
 
             self.assertIsNotNone(p)
-            self.assertOutputs([Output("LVDS1", mode="1366x768")], p.outputs)
-            self.assertEqual(0, len(p.rules))
-
-    def assertOutputs(self, expected_outputs: list, profile_outputs: list):
-        self.assertEqual(len(expected_outputs), len(profile_outputs))
-        for eo in expected_outputs:
-            matching_output = next(filter(lambda po: po.name == eo.name, profile_outputs), None)
-            self.assertIsNotNone(matching_output, "Expected {} among {}".format(eo.name, profile_outputs))
-            self.assertDictEqual(eo.__dict__, matching_output.__dict__)
+            self.assertDictEqual({"LVDS1": Output(mode="1366x768")}, p.outputs)
+            self.assertIsNone(p.match)
 
     def test_profile_from_xrandr(self):
         xc = [XrandrConnection("LVDS1", Display(), Viewport("1366x768"), False),
@@ -53,64 +47,8 @@ class Test_ProfileManager(TestCase):
         self.assertEqual("profile", p.name)
         self.assertEqual(2, len(p.outputs))
 
-    def test_to_dict(self):
-        with open(self.TEST_PROFILE_FILE) as f:
-            p = self.manager.read_file(f)
 
-            d = self.manager.to_dict(p)
-            self.maxDiff = None
-            self.assertDictEqual(
-                {'primary': 'LVDS1',
-                 'priority': 100,
-                 'match': {'LVDS1': {},
-                           'DP1': {'edid': "d8578edf8458ce06fbc5bb76a58c5ca4",
-                                   'supports': "1920x1080",
-                                   'prefers': "1920x1200"}},
-                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0",
-                                     'scale': "1x1"},
-                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0",
-                                       'scale': "1x1"},
-                             'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
-                                      'panning': "800x1080", 'rate': 80, 'scale': "1x1"}}}, d)
-
-    def test_to_dict_no_rules(self):
-        with open(self.TEST_PROFILE_FILE) as f:
-            p = self.manager.read_file(f)
-            p.rules = None
-
-            d = self.manager.to_dict(p)
-            self.maxDiff = None
-            self.assertDictEqual(
-                {'primary': 'LVDS1',
-                 'priority': 100,
-                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0",
-                                     'scale': "1x1"},
-                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0",
-                                       'scale': "1x1"},
-                             'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
-                                      'panning': "800x1080", 'rate': 80, 'scale': "1x1"}}}, d)
-
-    def test_to_dict_no_edid_rule(self):
-        with open(self.TEST_PROFILE_FILE) as f:
-            p = self.manager.read_file(f)
-            p.rules['DP1'].edid = None
-
-            d = self.manager.to_dict(p)
-            self.maxDiff = None
-            self.assertDictEqual(
-                {'primary': 'LVDS1',
-                 'priority': 100,
-                 'match': {'LVDS1': {},
-                           'DP1': {'supports': "1920x1080", 'prefers': "1920x1200"}},
-                 'outputs': {'DP1': {'mode': "1920x1080", 'pos': "1366x0", 'rotate': "normal", 'panning': "0x0",
-                                     'scale': "1x1"},
-                             'LVDS1': {'mode': "1366x768", 'pos': "0x0", 'rotate': "normal", 'panning': "0x0",
-                                       'scale': "1x1"},
-                             'VGA1': {'mode': "800x600", 'pos': "3286x0", 'rotate': "inverted",
-                                      'panning': "800x1080", 'rate': 80, 'scale': "1x1"}}}, d)
-
-
-class Test_ProfileMatcher(TestCase):
+class ProfileMatcherTest(TestCase):
     logging.basicConfig()
 
     matcher = ProfileMatcher()
@@ -253,7 +191,7 @@ class Test_ProfileMatcher(TestCase):
         self.assertEqual("match5", matches[4][1].name)
 
 
-def profile(name: str, rules: dict = None, prio: int = 100):
+def profile(name: str, match: dict = None, prio: int = 100):
     # we do not care about actual outputs in these tests, only rules matters
-    return Profile(name, [], rules, priority=prio)
+    return Profile(name, {}, match, priority=prio)
 

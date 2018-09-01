@@ -82,10 +82,10 @@ class Xrandr:
         args = []
         active_names = []
 
-        for o in profile.outputs:
-            active_names.append(o.name)
+        for name, o in profile.outputs.items():
+            active_names.append(name)
             args.append(self.OUTPUT_KEY)
-            args.append(o.name)
+            args.append(name)
             args.append(self.MODE_KEY)
             args.append(o.mode)
             args.append(self.POS_KEY)
@@ -99,7 +99,7 @@ class Xrandr:
             if o.rate:
                 args.append(self.RATE_KEY)
                 args.append(str(o.rate))
-            if o.name == profile.primary:
+            if name == profile.primary:
                 args.append(self.PRIMARY_KEY)
             if o.crtc is not None:
                 args.append(self.CRTC_KEY)
@@ -255,7 +255,7 @@ class Xrandr:
             supported_modes.append(mode)
             if current:
                 current_mode = mode
-                current_rate = int(round(float(rate)))
+                current_rate = rate
             if preferred:
                 preferred_mode = mode
 

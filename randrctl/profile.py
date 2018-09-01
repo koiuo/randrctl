@@ -66,15 +66,12 @@ class ProfileManager:
                         v['supports'] = v['mode']
                         del v['mode']
                     rules[k] = Rule(**v)
-            else:
-                rules = {}
 
             primary = result['primary']
             outputs_raw = result['outputs']
-            outputs = []
+            outputs = {}
             for name, mode_raw in outputs_raw.items():
-                output = Output(name, **mode_raw)
-                outputs.append(output)
+                outputs[name] = Output(**mode_raw)
 
             name = os.path.basename(profile_file_descriptor.name)
 
@@ -89,7 +86,7 @@ class ProfileManager:
         For example, if name is my_home_vga/../../passwd, then file will be written as passwd under profile dir
         """
         os.makedirs(self.write_location, exist_ok=True)
-        dict = self.to_dict(p)
+        dict = p.to_dict()
         safename = os.path.basename(p.name)
         fullname = os.path.join(self.write_location, safename)
         if safename != p.name:
@@ -98,45 +95,27 @@ class ProfileManager:
             yaml.dump(dict, fp, default_flow_style=yaml_flow_style)
 
     def print(self, p: Profile, yaml_flow_style: bool=False):
-        dict = self.to_dict(p)
-        print(yaml.dump(dict, default_flow_style=yaml_flow_style))
+        print(yaml.dump(p.to_dict(), default_flow_style=yaml_flow_style))
 
-    def to_dict(self, p: Profile):
+    def profile_from_xrandr(self, xrandr_connections: list, profile_name: str='profile'):
         outputs = {}
-        primary = None
-        for o in p.outputs:
-            outputs[o.name] = o.todict()
-            if p.primary == o.name:
-                primary = o.name
-
-        result = {'outputs': outputs, 'primary': primary, 'priority': p.priority}
-
-        if p.rules:
-            rules = {}
-            for o, r in p.rules.items():
-                rules[o] = dict((k, v) for k, v in r.__dict__.items() if v is not None)
-            result['match'] = rules
-
-        return result
-
-    def profile_from_xrandr(self, xrandr_connections: list, name: str='profile'):
-        outputs = []
         rules = {}
         primary = None
-        for c in xrandr_connections:
-            display = c.display
-            if not display or not c.is_active():
+        for connection in xrandr_connections:
+            output_name = connection.name
+            display = connection.display
+            if not display or not connection.is_active():
                 continue
-            output = Output.fromconnection(c)
-            if c.primary:
-                primary = c.name
-            outputs.append(output)
+            output = Output.fromconnection(connection)
+            if connection.primary:
+                primary = output_name
+            outputs[output_name] = output
             rule = Rule(hash(display.edid), display.preferred_mode, display.mode)
-            rules[c.name] = rule
+            rules[output_name] = rule
 
         logger.debug("Extracted %d outputs from %d xrandr connections", len(outputs), len(xrandr_connections))
 
-        return Profile(name, outputs, rules, primary)
+        return Profile(profile_name, outputs, rules, primary)
 
 
 class ProfileMatcher:
@@ -150,8 +129,8 @@ class ProfileMatcher:
         output_names = set(map(lambda o: o.name, xrandr_outputs))
 
         # remove those with disconnected outputs
-        with_rules = filter(lambda p: len(p.rules) > 0, available_profiles)
-        with_rules_covering_outputs = filter(lambda p: len(set(p.rules) - output_names) == 0, with_rules)
+        with_rules = filter(lambda p: p.match and len(p.match) > 0, available_profiles)
+        with_rules_covering_outputs = filter(lambda p: len(set(p.match) - output_names) == 0, with_rules)
         profiles = list(with_rules_covering_outputs)
 
         logger.debug("%d/%d profiles match outputs sets", len(profiles), len(available_profiles))
@@ -185,7 +164,7 @@ class ProfileMatcher:
         score = 0
         logger.debug("Trying profile %s", p.name)
         for o in xrandr_outputs:
-            rule = p.rules.get(o.name)
+            rule = p.match.get(o.name)
             s = self._score_rule(rule, o) if rule is not None else 0
             logger.debug("%s scored %d for output %s", p.name, s, o.name)
             if s >= 0:

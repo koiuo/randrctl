@@ -12,9 +12,11 @@ class TestXrandr(TestCase):
         xrandr = Xrandr(":0", None)
         xrandr.EXECUTABLE = "stub"
 
-        outputs = [Output("LVDS1", mode='1366x768'),
-                   Output("DP1", mode='1920x1080', pos='1366x0', scale='1.5x1.5', panning='1920x1080'),
-                   Output("VGA1", mode='800x600', pos='0x768')]
+        outputs = {
+            "LVDS1": Output(mode='1366x768'),
+            "DP1": Output(mode='1920x1080', pos='1366x0', scale='1.5x1.5', panning='1920x1080'),
+            "VGA1": Output(mode='800x600', pos='0x768')
+        }
 
         p = Profile("default", outputs, primary="LVDS1")
 
@@ -42,7 +44,7 @@ class TestXrandr(TestCase):
         xrandr = Xrandr(":0", None)
         xrandr.EXECUTABLE = "stub"
 
-        outputs = [Output("LVDS1", mode='1366x768')]
+        outputs = {"LVDS1": Output(mode='1366x768')}
 
         p = Profile("default", outputs, primary="LVDS1")
 
@@ -106,7 +108,7 @@ class TestXrandr(TestCase):
         self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("60.00", connection.display.rate)
         self.assertEqual("1920x1080", connection.display.mode)
         self.assertEqual("1920x1080", connection.display.preferred_mode)
         self.assertEqual(["1920x1080"], connection.display.supported_modes)
@@ -130,7 +132,7 @@ class TestXrandr(TestCase):
         self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("60.00", connection.display.rate)
         self.assertEqual("1920x1080", connection.display.mode)
         self.assertEqual("1920x1080", connection.display.preferred_mode)
         self.assertEqual(["1920x1080"], connection.display.supported_modes)
@@ -154,7 +156,7 @@ class TestXrandr(TestCase):
         self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("60.00", connection.display.rate)
         self.assertEqual("1920x1080", connection.display.mode)
         self.assertEqual("1920x1080", connection.display.preferred_mode)
         self.assertEqual(["1920x1080"], connection.display.supported_modes)
@@ -178,7 +180,7 @@ class TestXrandr(TestCase):
         self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("60.00", connection.display.rate)
         self.assertEqual("1920x1080", connection.display.mode)
         self.assertEqual("1920x1080", connection.display.preferred_mode)
         self.assertEqual(["1920x1080"], connection.display.supported_modes)
@@ -202,7 +204,7 @@ class TestXrandr(TestCase):
         self.assertEqual("eDP1", connection.name)
 
         self.assertIsNotNone(connection.display)
-        self.assertEqual(60, connection.display.rate)
+        self.assertEqual("60.00", connection.display.rate)
         self.assertEqual("1920x1080", connection.display.mode)
         self.assertEqual("1920x1080", connection.display.preferred_mode)
         self.assertEqual(["1920x1080"], connection.display.supported_modes)

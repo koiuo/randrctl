@@ -101,9 +101,9 @@ class RandrCtl:
 
         # TODO move logic to manager
         if not (include_edid_rule or include_supports_rule or include_preferred_rule):
-            profile.rules = None
+            profile.match = None
         else:
-            for output, rule in profile.rules.items():
+            for rule in profile.match.values():
                 if not include_supports_rule:
                     rule.supports = None
                 if not include_preferred_rule:
@@ -112,7 +112,7 @@ class RandrCtl:
                     rule.edid = None
 
         if not include_refresh_rate:
-            for output in profile.outputs:
+            for output in profile.outputs.values():
                 output.rate = None
 
         if to_file:

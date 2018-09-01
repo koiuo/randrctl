@@ -169,6 +169,8 @@ def cmd_dump(randrctl: RandrCtl, args: argparse.Namespace):
                           include_supports_rule=args.match_supports,
                           include_preferred_rule=args.match_preferred,
                           include_edid_rule=args.match_edid,
+                          # TODO is this a bug?
+                          # edid defines rate
                           include_refresh_rate=args.match_edid,
                           priority=args.priority,
                           json_compatible=args.json)
