@@ -37,7 +37,8 @@ class Xrandr:
 
     def __init__(self, display: str, xauthority: str):
         env = dict(os.environ)
-        env[DISPLAY] = display
+        if display:
+            env[DISPLAY] = display
         if xauthority:
             env[XAUTHORITY] = xauthority
         self.env = env

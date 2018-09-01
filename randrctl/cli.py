@@ -148,10 +148,12 @@ def cmd_list(randrctl: RandrCtl, args: argparse.Namespace):
         randrctl.list_all_scored()
     else:
         randrctl.list_all()
+    return 0
 
 
 def cmd_switch_to(randrctl: RandrCtl, args: argparse.Namespace):
     randrctl.switch_to(args.profile_name)
+    return 0
 
 
 def cmd_show(randrctl: RandrCtl, args: argparse.Namespace):
@@ -159,6 +161,7 @@ def cmd_show(randrctl: RandrCtl, args: argparse.Namespace):
         randrctl.print(args.profile_name, json_compatible=args.json)
     else:
         randrctl.dump_current('current', json_compatible=args.json)
+    return 0
 
 
 def cmd_dump(randrctl: RandrCtl, args: argparse.Namespace):
@@ -169,44 +172,52 @@ def cmd_dump(randrctl: RandrCtl, args: argparse.Namespace):
                           include_refresh_rate=args.match_edid,
                           priority=args.priority,
                           json_compatible=args.json)
+    return 0
 
 
 def cmd_auto(randrctl: RandrCtl, args: argparse.Namespace):
     randrctl.switch_auto()
+    return 0
 
 
 def cmd_version(randrctl: RandrCtl, args: argparse.Namespace):
     print(pkg_resources.get_distribution("randrctl").version)
+    return 0
 
 
 def cmd_setup(randrctl: RandrCtl, args: argparse.Namespace):
     if args.task is None:
         sys.stderr.write(f"Available subcommands: {SETUP_COMPLETION}, {SETUP_CONFIG}, {SETUP_UDEV}\n")
-        sys.exit(1)
+        return 1
+
+    subcommands = {
+        SETUP_COMPLETION: cmd_setup_completion,
+        SETUP_CONFIG: cmd_setup_config,
+        SETUP_UDEV: cmd_setup_udev,
+    }
 
     try:
-        {
-            SETUP_COMPLETION: cmd_setup_completion,
-            SETUP_CONFIG: cmd_setup_config,
-            SETUP_UDEV: cmd_setup_udev,
-        }[args.task](args)
+        return subcommands[args.task](args)
     except RandrCtlException as e:
         logger.error(e)
-        sys.exit(1)
+        return 1
 
 
 def cmd_setup_completion(args: argparse.Namespace):
     print(argcomplete.shellcode('randrctl', True, 'bash', None))
+    return 0
 
 
 def cmd_setup_config(args: argparse.Namespace):
-    with (open(pkg_resources.resource_filename('randrctl', 'misc/config.yaml'), 'r')) as f:
+    with (open(pkg_resources.resource_filename('randrctl', 'setup/config.yaml'), 'r')) as f:
         shutil.copyfileobj(f, sys.stdout)
+    return 0
 
 
 def cmd_setup_udev(args: argparse.Namespace):
-    with (open(pkg_resources.resource_filename('randrctl', 'misc/99-randrctl.rules'), 'r')) as f:
+    with (open(pkg_resources.resource_filename('randrctl', 'setup/99-randrctl.rules'), 'r')) as f:
         shutil.copyfileobj(f, sys.stdout)
+    return 0
 
 
 # Main logic
@@ -264,18 +275,13 @@ def main():
     cmd = commands.get(args.command)
     if cmd is None:
         parser.print_help()
-        sys.exit(1)
+        return 1
 
     display = getenv(DISPLAY)
     xauthority = getenv(XAUTHORITY)
 
-    if not display:
+    if not display and args.detect_display:
         # likely we are executed from UDEV rule
-
-        if not args.detect_display:
-            logger.error("DISPLAY environment variable is not set")
-            sys.exit(1)
-
         displays = x_displays()
         for display in displays:
             logger.debug("Trying DISPLAY %s", display)
@@ -289,17 +295,18 @@ def main():
                     xauthority=xauthority,
                     config_dirs=[path.join(owner.pw_dir, context.DEFAULT_CONFIG_LOCATION)]
                 )
-                cmd(randrctl, args)
+                result = cmd(randrctl, args)
                 # exit as soon as first execution succeeds
-                sys.exit(0)
+                if result == 0:
+                    return 0
             except RandrCtlException as e:
                 logger.error(e)
         logger.error("Could not apply settings for any available display [%s]", displays)
-        sys.exit(1)
+        return 1
     else:
         try:
             randrctl = context.build(display, xauthority)
-            cmd(randrctl, args)
+            return cmd(randrctl, args)
         except RandrCtlException as e:
             logger.error(e)
-            sys.exit(1)
+            return 1
