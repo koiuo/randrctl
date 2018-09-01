@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.8.0 - 2018-09-01
 
 ### Added
 
@@ -12,6 +12,7 @@
 
 - python 3.7 compatibility
 - migrated from `packit` to `pbr` (should fix installation issues)
+- undesired rounding of refresh rate (#15)
 
 ### Removed
 
