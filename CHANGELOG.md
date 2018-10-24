@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- regression where profiles with no `primary` field were considered invalid
+
 ## 1.8.0 - 2018-09-01
 
 ### Added

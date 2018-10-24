@@ -67,7 +67,7 @@ class ProfileManager:
                         del v['mode']
                     rules[k] = Rule(**v)
 
-            primary = result['primary']
+            primary = result.get('primary')
             outputs_raw = result['outputs']
             outputs = {}
             for name, mode_raw in outputs_raw.items():
