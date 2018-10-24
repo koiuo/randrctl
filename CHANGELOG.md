@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.8.1 - 2018-10-23
 
 ### Fixed
 
