@@ -68,7 +68,7 @@ class RandrCtl:
         Apply profile settings by profile name
         """
         p = self.profile_manager.read_one(profile_name)
-        self.xrandr.apply(p)
+        self._apply(p)
 
     def switch_auto(self):
         """
@@ -81,7 +81,7 @@ class RandrCtl:
         matching = profileMatcher.find_best(profiles, xrandr_outputs)
 
         if matching is not None:
-            self.xrandr.apply(matching)
+            self._apply(matching)
         else:
             logger.warning("No matching profile found")
 
