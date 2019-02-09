@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.2 - 2019-02-09
+
+### Fixed
+
+- regression where hooks were not applied
+
 ## 1.8.1 - 2018-10-23
 
 ### Fixed
