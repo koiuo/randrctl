@@ -2,6 +2,7 @@ from os import path
 
 import logging
 import os
+import yaml
 
 from yaml import load, YAMLError
 
@@ -54,7 +55,7 @@ def configs(config_dirs: list):
             with open(config_file, 'r') as stream:
                 try:
                     logger.debug("reading configuration from %s", config_file)
-                    cfg = load(stream)
+                    cfg = load(stream, Loader=yaml.FullLoader)
                     if cfg:
                         yield (randrctl_home, cfg)
                 except YAMLError as e:

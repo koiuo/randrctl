@@ -52,7 +52,7 @@ class ProfileManager:
 
     def read_file(self, profile_file_descriptor):
         try:
-            result = yaml.load(profile_file_descriptor)
+            result = yaml.load(profile_file_descriptor, Loader=yaml.FullLoader)
 
             rules = result.get('match')
             priority = int(result.get('priority', 100))
