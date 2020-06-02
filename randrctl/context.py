@@ -61,12 +61,15 @@ def configs(config_dirs: list):
                     logger.warning("error reading configuration file %s", config_file)
 
 
-def build(display: str, xauthority: str = None, config_dirs: list = default_config_dirs()):
+def build(display: str, xauthority: str = None, config_dirs=None):
     """
     Builds a RandrCtl instance and all its dependencies given a list of config directories
     :param: display - display
     :return: new ready to use RandrCtl instance
     """
+    if config_dirs is None:
+        config_dirs = default_config_dirs()
+
     (primary_config_dir, config) = next(configs(config_dirs), (config_dirs[0], dict()))
 
     prior_switch = config.get('hooks', dict()).get('prior_switch', None)
