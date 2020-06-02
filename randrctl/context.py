@@ -14,15 +14,17 @@ logger = logging.getLogger(__name__)
 CONFIG_NAME = "config.yaml"
 PROFILE_DIR_NAME = "profiles"
 DEFAULT_CONFIG_LOCATION = ".config/randrctl"
+SYS_CONFIG_DIR = "/etc/randrctl"
 
 
-def default_config_dirs():
+def default_config_dirs(owner_home="$HOME"):
     """
     :return: default list of directories to look for a config in
     """
     # $HOME is guaranteed to exist on POSIX
     dirs = [
-        _recursive_expand(path.join('$HOME', DEFAULT_CONFIG_LOCATION))
+        _recursive_expand(path.join(owner_home, DEFAULT_CONFIG_LOCATION)),
+        SYS_CONFIG_DIR,
     ]
 
     # if XDG_CONFIG_HOME is defined, use it too

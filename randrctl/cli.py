@@ -295,7 +295,7 @@ def main():
                 randrctl = context.build(
                     display=display,
                     xauthority=xauthority,
-                    config_dirs=[path.join(owner.pw_dir, context.DEFAULT_CONFIG_LOCATION)]
+                    config_dirs=context.default_config_dirs(owner_home=owner.pw_dir),
                 )
                 result = cmd(randrctl, args)
                 # exit as soon as first execution succeeds
