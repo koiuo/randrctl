@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.0 - 2020-06-02
+
+### Added
+
+- `/etc/randrctl` directory is now probed for config and profiles if there's no
+  _randrctl_ config in home dir
+
+### Fixed
+
+- deprecation/security warnings caused by outdated pyyaml dependency
+
 ## 1.8.2 - 2019-02-09
 
 ### Fixed
