@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/edio/randrctl.svg?branch=master)](https://travis-ci.org/edio/randrctl)
+[![CI](https://github.com/palfrey/randrctl/actions/workflows/ci.yml/badge.svg)](https://github.com/palfrey/randrctl/actions/workflows/ci.yml)
 
 # randrctl
 
