@@ -78,9 +78,10 @@ def args_parser():
 
     # list
     command_list = commands_parsers.add_parser(LIST, help='list available profiles')
-    command_list.add_argument('-l', action='store_const', const=True, default=False,
+    group = command_list.add_mutually_exclusive_group()
+    group.add_argument('-l', action='store_const', const=True, default=False,
                               help='long listing', dest='long_listing')
-    command_list.add_argument('-s', action='store_const', const=True, default=False,
+    group.add_argument('-s', action='store_const', const=True, default=False,
                               help='scored listing', dest='scored_listing')
 
     # dump
