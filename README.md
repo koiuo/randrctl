@@ -1,4 +1,4 @@
-[![CI](https://github.com/palfrey/randrctl/actions/workflows/ci.yml/badge.svg)](https://github.com/palfrey/randrctl/actions/workflows/ci.yml)
+[![CI](https://github.com/koiuo/randrctl/actions/workflows/ci.yml/badge.svg)](https://github.com/koiuo/randrctl/actions/workflows/ci.yml)
 
 # randrctl
 
