@@ -62,15 +62,12 @@ class Xrandr:
         logger.debug("Calling xrandr with args %s", args)
         args.insert(0, self.EXECUTABLE)
 
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, env=self.env)
-        err = p.stderr.readlines()
+        p = subprocess.run(args, capture_output=True, shell=False, env=self.env)
+        err = p.stderr
         if err:
-            # close descriptors
-            p.stderr.close()
-            p.stdout.close()
-            err_str = ''.join(map(lambda x: x.decode(), err)).strip()
+            err_str = err.decode()
             raise XrandrException(err_str, args)
-        out = list(map(lambda x: x.decode(), p.stdout.readlines()))
+        out = list(map(lambda x: x.decode(), p.stdout.splitlines()))
         if out:
             out.pop(0)  # remove first line. It describes Screen
         return out
