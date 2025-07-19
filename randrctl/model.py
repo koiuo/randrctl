@@ -80,7 +80,7 @@ class Serializable(Deserializable):
 
 
 class Profile(Serializable):
-    def __init__(self, name, outputs: dict, match: dict = None, primary: str = None, priority: int = 100):
+    def __init__(self, name: str, outputs: dict, match: dict = None, primary: str = None, priority: int = 100):
         """
         :param name: name of the profile
         :param outputs: list of Output objects (i.e. settings to apply for each output)

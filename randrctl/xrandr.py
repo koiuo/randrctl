@@ -4,6 +4,7 @@ from functools import reduce, lru_cache
 import logging
 import re
 import subprocess
+from typing import Optional
 
 from randrctl import DISPLAY, XAUTHORITY
 from randrctl.exception import XrandrException, ParseException
@@ -35,7 +36,7 @@ class Xrandr:
     MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
     CURRENT_MODE_REGEX = re.compile("\s*(\S+)\s+([0-9\.]+)(.*$)")
 
-    def __init__(self, display: str, xauthority: str):
+    def __init__(self, display: Optional[str], xauthority: Optional[str]):
         env = dict(os.environ)
         if display:
             env[DISPLAY] = display
@@ -111,7 +112,7 @@ class Xrandr:
 
         return args
 
-    def get_all_outputs(self):
+    def get_all_outputs(self) -> list[XrandrConnection]:
         """
         Query xrandr for all supported outputs.
         Performs call to xrandr with -q key and parses output.
@@ -131,7 +132,7 @@ class Xrandr:
 
         return outputs
 
-    def get_connected_outputs(self):
+    def get_connected_outputs(self) -> list[XrandrConnection]:
         """
         Query xrandr and return list of connected outputs.
         Performs call to xrandr with -q and --verbose keys.
@@ -145,7 +146,7 @@ class Xrandr:
             logger.debug("Connected outputs: %s", list(map(lambda o: o.name, outputs)))
         return outputs
 
-    def _get_verbose_fields(self, field):
+    def _get_verbose_fields(self, field: str) -> dict:
         """
         Get particular field of all connected displays.
         Return dictionary of {"connection_name": field_value}
@@ -163,7 +164,7 @@ class Xrandr:
 
         return ret
 
-    def _field_from_query_item(self, item_lines: list, field: str):
+    def _field_from_query_item(self, item_lines: list, field: str) -> str:
         """
         Extracts display field from xrandr --verbose output
         """

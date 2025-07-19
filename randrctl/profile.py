@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import os
+from typing import List, Optional, Tuple
 import yaml
 
 from randrctl.exception import InvalidProfileException, NoSuchProfileException
@@ -21,8 +22,8 @@ class ProfileManager:
         self.read_locations = list(filter(lambda location: os.path.isdir(location), read_locations))
         self.write_location = write_location
 
-    def read_all(self):
-        profiles = []
+    def read_all(self) -> List[Profile]:
+        profiles: List[Profile] = []
         for profile_dir in self.read_locations:
             for entry in os.listdir(profile_dir):
                 path = os.path.join(profile_dir, entry)
@@ -50,7 +51,7 @@ class ProfileManager:
         else:
             raise NoSuchProfileException(profile_name, self.read_locations)
 
-    def read_file(self, profile_file_descriptor):
+    def read_file(self, profile_file_descriptor) -> Profile:
         try:
             result = yaml.load(profile_file_descriptor, Loader=yaml.FullLoader)
 
@@ -122,7 +123,7 @@ class ProfileMatcher:
     """
     Matches profile to xrandr connections
     """
-    def match(self, available_profiles: list, xrandr_outputs: list):
+    def match(self, available_profiles: List[Profile], xrandr_outputs: List[XrandrConnection]) -> List[Tuple[int, Profile]]:
         """
         return a sorted list of matched profiles
         """
@@ -135,14 +136,14 @@ class ProfileMatcher:
 
         logger.debug("%d/%d profiles match outputs sets", len(profiles), len(available_profiles))
 
-        matching = []
+        matching: List[Tuple[int, Profile]] = []
         for p in profiles:
             score = self._calculate_profile_score(p, xrandr_outputs)
             if score >= 0:
                 matching.append((score, p))
         return sorted(matching, key=lambda x: (x[0], x[1].priority), reverse=True)
 
-    def find_best(self, available_profiles: list, xrandr_outputs: list):
+    def find_best(self, available_profiles: List[Profile], xrandr_outputs: list[XrandrConnection]) -> Optional[Profile]:
         """
         Find first matching profile across availableProfiles for actualConnections
         """
