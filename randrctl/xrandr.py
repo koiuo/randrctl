@@ -4,7 +4,7 @@ from functools import reduce, lru_cache
 import logging
 import re
 import subprocess
-from typing import Optional
+from typing import List, Optional
 
 from randrctl import DISPLAY, XAUTHORITY
 from randrctl.exception import XrandrException, ParseException
@@ -112,7 +112,7 @@ class Xrandr:
 
         return args
 
-    def get_all_outputs(self) -> list[XrandrConnection]:
+    def get_all_outputs(self) -> List[XrandrConnection]:
         """
         Query xrandr for all supported outputs.
         Performs call to xrandr with -q key and parses output.
@@ -132,7 +132,7 @@ class Xrandr:
 
         return outputs
 
-    def get_connected_outputs(self) -> list[XrandrConnection]:
+    def get_connected_outputs(self) -> List[XrandrConnection]:
         """
         Query xrandr and return list of connected outputs.
         Performs call to xrandr with -q and --verbose keys.
