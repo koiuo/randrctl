@@ -18,7 +18,6 @@ class Xrandr:
     Interface for xrandr application. Provides methods for calling xrandr operating with python objects such as
     randrctl.profile.Profile
     """
-    EXECUTABLE = "/usr/bin/xrandr"
     OUTPUT_KEY = "--output"
     MODE_KEY = "--mode"
     POS_KEY = "--pos"
@@ -36,7 +35,8 @@ class Xrandr:
     MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
     CURRENT_MODE_REGEX = re.compile("\s*(\S+)\s+([0-9\.]+)(.*$)")
 
-    def __init__(self, display: Optional[str], xauthority: Optional[str]):
+    def __init__(self, display: Optional[str], xauthority: Optional[str], executable: str = "/usr/bin/xrandr"):
+        self.executable = executable
         env = dict(os.environ)
         if display:
             env[DISPLAY] = display
@@ -61,7 +61,7 @@ class Xrandr:
         """
         args = list(args)
         logger.debug("Calling xrandr with args %s", args)
-        args.insert(0, self.EXECUTABLE)
+        args.insert(0, self.executable)
 
         p = subprocess.run(args, capture_output=True, shell=False, env=self.env)
         err = p.stderr
