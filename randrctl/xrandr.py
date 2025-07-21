@@ -35,8 +35,7 @@ class Xrandr:
     MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
     CURRENT_MODE_REGEX = re.compile("\s*(\S+)\s+([0-9\.]+)(.*$)")
 
-    def __init__(self, display: Optional[str], xauthority: Optional[str], executable: str = "/usr/bin/xrandr"):
-        self.executable = executable
+    def __init__(self, display: Optional[str], xauthority: Optional[str]):
         env = dict(os.environ)
         if display:
             env[DISPLAY] = display
@@ -61,7 +60,7 @@ class Xrandr:
         """
         args = list(args)
         logger.debug("Calling xrandr with args %s", args)
-        args.insert(0, self.executable)
+        args.insert(0, "xrandr")
 
         p = subprocess.run(args, capture_output=True, shell=False, env=self.env)
         err = p.stderr
