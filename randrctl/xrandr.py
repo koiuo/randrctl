@@ -31,9 +31,9 @@ class Xrandr:
     VERBOSE_KEY = "--verbose"
     OFF_KEY = "--off"
     OUTPUT_DETAILS_REGEX = re.compile(
-        '(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*?(?:panning (?P<panning>[\dx\+]+))?$')
-    MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
-    CURRENT_MODE_REGEX = re.compile("\s*(\S+)\s+([0-9\.]+)(.*$)")
+        r'(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*?(?:panning (?P<panning>[\dx\+]+))?$')
+    MODE_REGEX = re.compile(r"(\d+x\d+)\+(\d+\+\d+)")
+    CURRENT_MODE_REGEX = re.compile(r"\s*(\S+)\s+([0-9\.]+)(.*$)")
 
     def __init__(self, display: Optional[str], xauthority: Optional[str]):
         env = dict(os.environ)
