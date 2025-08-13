@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.10.0 - 2024-02-10
+
+### Changed
+
+- allow both `-l` and `-s` options in list command
+
+### Fixed
+
+- an issue where xrandr output parsing hangs
+
 ## 1.9.0 - 2020-06-02
 
 ### Added
