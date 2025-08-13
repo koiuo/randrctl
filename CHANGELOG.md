@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.0 - 2025-08-13
+
+### Changed
+
+- use `xrandr` from `PATH` instead of hard-coded `/usr/bin` location
+
 ## 1.10.0 - 2024-02-10
 
 ### Changed
