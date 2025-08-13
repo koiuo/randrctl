@@ -4,6 +4,7 @@ from functools import reduce, lru_cache
 import logging
 import re
 import subprocess
+from typing import List, Optional
 
 from randrctl import DISPLAY, XAUTHORITY
 from randrctl.exception import XrandrException, ParseException
@@ -17,7 +18,6 @@ class Xrandr:
     Interface for xrandr application. Provides methods for calling xrandr operating with python objects such as
     randrctl.profile.Profile
     """
-    EXECUTABLE = "/usr/bin/xrandr"
     OUTPUT_KEY = "--output"
     MODE_KEY = "--mode"
     POS_KEY = "--pos"
@@ -31,11 +31,11 @@ class Xrandr:
     VERBOSE_KEY = "--verbose"
     OFF_KEY = "--off"
     OUTPUT_DETAILS_REGEX = re.compile(
-        '(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*?(?:panning (?P<panning>[\dx\+]+))?$')
-    MODE_REGEX = re.compile("(\d+x\d+)\+(\d+\+\d+)")
-    CURRENT_MODE_REGEX = re.compile("\s*(\S+)\s+([0-9\.]+)(.*$)")
+        r'(?P<primary>primary )?(?P<geometry>[\dx\+]+) (?:(?P<rotate>\w+) )?.*?(?:panning (?P<panning>[\dx\+]+))?$')
+    MODE_REGEX = re.compile(r"(\d+x\d+)\+(\d+\+\d+)")
+    CURRENT_MODE_REGEX = re.compile(r"\s*(\S+)\s+([0-9\.]+)(.*$)")
 
-    def __init__(self, display: str, xauthority: str):
+    def __init__(self, display: Optional[str], xauthority: Optional[str]):
         env = dict(os.environ)
         if display:
             env[DISPLAY] = display
@@ -60,7 +60,7 @@ class Xrandr:
         """
         args = list(args)
         logger.debug("Calling xrandr with args %s", args)
-        args.insert(0, self.EXECUTABLE)
+        args.insert(0, "xrandr")
 
         p = subprocess.run(args, capture_output=True, shell=False, env=self.env)
         err = p.stderr
@@ -111,7 +111,7 @@ class Xrandr:
 
         return args
 
-    def get_all_outputs(self):
+    def get_all_outputs(self) -> List[XrandrConnection]:
         """
         Query xrandr for all supported outputs.
         Performs call to xrandr with -q key and parses output.
@@ -131,7 +131,7 @@ class Xrandr:
 
         return outputs
 
-    def get_connected_outputs(self):
+    def get_connected_outputs(self) -> List[XrandrConnection]:
         """
         Query xrandr and return list of connected outputs.
         Performs call to xrandr with -q and --verbose keys.
@@ -145,7 +145,7 @@ class Xrandr:
             logger.debug("Connected outputs: %s", list(map(lambda o: o.name, outputs)))
         return outputs
 
-    def _get_verbose_fields(self, field):
+    def _get_verbose_fields(self, field: str) -> dict:
         """
         Get particular field of all connected displays.
         Return dictionary of {"connection_name": field_value}
@@ -163,7 +163,7 @@ class Xrandr:
 
         return ret
 
-    def _field_from_query_item(self, item_lines: list, field: str):
+    def _field_from_query_item(self, item_lines: list, field: str) -> str:
         """
         Extracts display field from xrandr --verbose output
         """
