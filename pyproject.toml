@@ -41,13 +41,13 @@ Issues = "https://github.com/koiuo/randrctl/issues"
 [project.scripts]
 randrctl = "randrctl.cli:main"
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=3.4.2"
-]
-
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["randrctl"]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4.4",
+]
